@@ -173,3 +173,34 @@ def test_pruned_selection_scales_directions_by_the_right_activation():
     set_ = transcoders()
     sources = feature_sources(graph, set_, below_layer=5)
     torch.testing.assert_close(sources.directions[0], set_[2].W_dec[3] * 30.0)
+
+
+def test_directions_are_gathered_once_per_layer():
+    """Row-by-row reads re-load a lazy transcoder per feature, which is unusably slow."""
+
+    class CountingTranscoders(StubTranscoders):
+        def __init__(self, **kwargs):
+            super().__init__(**kwargs)
+            self.accesses = 0
+
+        def __getitem__(self, layer):
+            self.accesses += 1
+            return super().__getitem__(layer)
+
+    triples = [(1, 0, 0), (1, 1, 1), (1, 2, 2), (2, 0, 3), (2, 1, 4)]
+    graph = StubGraph.with_features(triples, activations=[1.0] * len(triples))
+    set_ = CountingTranscoders(n_layers=N_LAYERS, d_model=D_MODEL)
+    sources = feature_sources(graph, set_, below_layer=5)
+    assert len(sources) == 5
+    # One access for the template plus one per distinct layer.
+    assert set_.accesses <= 3
+
+
+def test_gathered_directions_match_their_features():
+    triples = [(1, 0, 5), (2, 1, 7), (1, 2, 9)]
+    graph = StubGraph.with_features(triples, activations=[1.0, 2.0, 3.0])
+    set_ = transcoders()
+    sources = feature_sources(graph, set_, below_layer=5)
+    torch.testing.assert_close(sources.directions[0], set_[1].W_dec[5] * 1.0)
+    torch.testing.assert_close(sources.directions[1], set_[2].W_dec[7] * 2.0)
+    torch.testing.assert_close(sources.directions[2], set_[1].W_dec[9] * 3.0)

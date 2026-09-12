@@ -128,10 +128,12 @@ def feature_sources(
     directions = torch.empty(
         (int(keep.sum()), template.shape[1]), dtype=template.dtype, device=device
     )
-    # One row at a time, because the decoders are lazily loaded per layer and stacking them all
-    # would materialise every transcoder at once.
-    for row, (layer, feature) in enumerate(zip(layers.tolist(), feature_ids.tolist(), strict=True)):
-        directions[row] = transcoders[layer].W_dec[feature].to(device)
+    # Gathered one layer at a time. Reading row by row instead costs a separate decoder access per
+    # feature, and with lazily loaded transcoders each of those can re-read the layer from disk,
+    # which turns a few seconds into many minutes on a graph with tens of thousands of features.
+    for layer in layers.unique().tolist():
+        rows = layers == layer
+        directions[rows] = transcoders[layer].W_dec[feature_ids[rows]].to(device)
     directions = directions * activations.to(device=device, dtype=directions.dtype).unsqueeze(-1)
 
     return SourceSet(
