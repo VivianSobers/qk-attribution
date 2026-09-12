@@ -68,7 +68,6 @@ completes and does not affect results. Possible upstream report.
 
 ## Next
 
-- Measure the size of the discrepancy between the plain form and true scores, for the record
-- Check Gemma-2-2B, which has soft-capping but may lack QK-norm, and may therefore be the better
-  target for a first QK implementation
-- Derive the offset-dependent rotary operator and verify it reproduces true scores
+Resolved in `experiments/003-exact-qk-form.md`: the plain form's error was measured, the
+offset-dependent operator was derived and verified against the model's own scores, and Gemma-2-2B
+was checked. It has no QK-norm but does soft-cap scores, so it is harder rather than easier.
