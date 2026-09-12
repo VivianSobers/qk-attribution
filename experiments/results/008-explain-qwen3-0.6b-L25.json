@@ -1,0 +1,142 @@
+{
+ "model": "Qwen/Qwen3-0.6B",
+ "graph": "spike_out/graph.pt",
+ "scan": "mwhanna/qwen3-0.6b-transcoders-lowl0",
+ "seed": 0,
+ "seq": 9,
+ "model_dtype": "torch.float32",
+ "transcoder_dtype": "torch.bfloat16",
+ "graph_dtype": "torch.bfloat16",
+ "n_features": 3165,
+ "layer": 25,
+ "head": 8,
+ "query_position": 8,
+ "tokens": [
+  "<|im_end|>",
+  "The",
+  " capital",
+  " of",
+  " the",
+  " state",
+  " containing",
+  " Dallas",
+  " is"
+ ],
+ "attends_to": [
+  {
+   "position": 0,
+   "token": "<|im_end|>",
+   "probability": 0.5594563484191895
+  },
+  {
+   "position": 8,
+   "token": " is",
+   "probability": 0.1672254502773285
+  },
+  {
+   "position": 2,
+   "token": " capital",
+   "probability": 0.108489491045475
+  },
+  {
+   "position": 3,
+   "token": " of",
+   "probability": 0.05608631297945976
+  },
+  {
+   "position": 7,
+   "token": " Dallas",
+   "probability": 0.042431604117155075
+  }
+ ],
+ "reconstruction_error": 0.0004436973831616342,
+ "feature_share": 0.07550346851348877,
+ "pairs": [
+  {
+   "rank": 0,
+   "contribution": 0.05152536556124687,
+   "key_position": 8,
+   "key_token": " is",
+   "query": "L1#89206 fires on ' of', 'arch', 'a', 'of' -> promotes 'Spacing', 'Chain', 'rowsable', 'ivial'",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "rank": 1,
+   "contribution": 0.05052586644887924,
+   "key_position": 1,
+   "key_token": "The",
+   "query": "L1#89206 fires on ' of', 'arch', 'a', 'of' -> promotes 'Spacing', 'Chain', 'rowsable', 'ivial'",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "rank": 2,
+   "contribution": 0.05039835721254349,
+   "key_position": 3,
+   "key_token": " of",
+   "query": "L1#89206 fires on ' of', 'arch', 'a', 'of' -> promotes 'Spacing', 'Chain', 'rowsable', 'ivial'",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "rank": 3,
+   "contribution": 0.04776979982852936,
+   "key_position": 6,
+   "key_token": " containing",
+   "query": "L1#89206 fires on ' of', 'arch', 'a', 'of' -> promotes 'Spacing', 'Chain', 'rowsable', 'ivial'",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "rank": 4,
+   "contribution": 0.04423745721578598,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#89206 fires on ' of', 'arch', 'a', 'of' -> promotes 'Spacing', 'Chain', 'rowsable', 'ivial'",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "rank": 5,
+   "contribution": 0.038622576743364334,
+   "key_position": 5,
+   "key_token": " state",
+   "query": "L1#89206 fires on ' of', 'arch', 'a', 'of' -> promotes 'Spacing', 'Chain', 'rowsable', 'ivial'",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  }
+ ],
+ "top_key_features": [
+  {
+   "contribution": 0.1496540606021881,
+   "key_position": 2,
+   "key_token": " capital",
+   "key": "L20#126331 fires on ' capital', ' Capital', ' capitals', 'itol' -> promotes 'ibur', 'itulo', 'itol', 'itals'"
+  },
+  {
+   "contribution": 0.14498698711395264,
+   "key_position": 3,
+   "key_token": " of",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "contribution": 0.13621214032173157,
+   "key_position": 1,
+   "key_token": "The",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "contribution": 0.1318252831697464,
+   "key_position": 6,
+   "key_token": " containing",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "contribution": 0.1303521990776062,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  },
+  {
+   "contribution": 0.12019261717796326,
+   "key_position": 8,
+   "key_token": " is",
+   "key": "L24#31277 fires on ' largest', ' incest', ',', ' he' -> promotes ' tongues', ' colonies', ' miracles', ' midnight'"
+  }
+ ]
+}

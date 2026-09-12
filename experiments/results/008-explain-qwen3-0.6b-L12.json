@@ -1,0 +1,142 @@
+{
+ "model": "Qwen/Qwen3-0.6B",
+ "graph": "spike_out/graph.pt",
+ "scan": "mwhanna/qwen3-0.6b-transcoders-lowl0",
+ "seed": 0,
+ "seq": 9,
+ "model_dtype": "torch.float32",
+ "transcoder_dtype": "torch.bfloat16",
+ "graph_dtype": "torch.bfloat16",
+ "n_features": 3165,
+ "layer": 12,
+ "head": 5,
+ "query_position": 8,
+ "tokens": [
+  "<|im_end|>",
+  "The",
+  " capital",
+  " of",
+  " the",
+  " state",
+  " containing",
+  " Dallas",
+  " is"
+ ],
+ "attends_to": [
+  {
+   "position": 2,
+   "token": " capital",
+   "probability": 0.25752025842666626
+  },
+  {
+   "position": 6,
+   "token": " containing",
+   "probability": 0.1776484102010727
+  },
+  {
+   "position": 5,
+   "token": " state",
+   "probability": 0.17280307412147522
+  },
+  {
+   "position": 7,
+   "token": " Dallas",
+   "probability": 0.1633392870426178
+  },
+  {
+   "position": 3,
+   "token": " of",
+   "probability": 0.11615381389856339
+  }
+ ],
+ "reconstruction_error": 0.0008450428140349686,
+ "feature_share": 0.12404308468103409,
+ "pairs": [
+  {
+   "rank": 0,
+   "contribution": -0.2837549149990082,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#95602 fires on 'anta', 'erte', ' containing', ' representing' -> promotes 'ivel', ' getView', 'ivery', 'elize'",
+   "key": "L11#91721 fires on '1', '2', ' the', ' an' -> promotes 'advisor', 'fest', '&gt', 'ickets'"
+  },
+  {
+   "rank": 1,
+   "contribution": 0.1932966560125351,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#399 fires on ' estimated', ' of', ' to', ' Tables' -> promotes 'ayers', ' Associates', '\u628a\u8fd9\u4e2a', 'neath'",
+   "key": "L11#91721 fires on '1', '2', ' the', ' an' -> promotes 'advisor', 'fest', '&gt', 'ickets'"
+  },
+  {
+   "rank": 2,
+   "contribution": 0.18716800212860107,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#95602 fires on 'anta', 'erte', ' containing', ' representing' -> promotes 'ivel', ' getView', 'ivery', 'elize'",
+   "key": "L11#134715 fires on ' his', ' the', ' P', ' a' -> promotes '\ufffd\ufffd', 'th\u00e8', 'ataire', '\ub7f4'"
+  },
+  {
+   "rank": 3,
+   "contribution": -0.13903258740901947,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#156697 fires on ' Way', ' way', ' night', ' topic' -> promotes 'study', '::$', ' Study', 'TING'",
+   "key": "L11#91721 fires on '1', '2', ' the', ' an' -> promotes 'advisor', 'fest', '&gt', 'ickets'"
+  },
+  {
+   "rank": 4,
+   "contribution": 0.1271045058965683,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#7926 (inactive)",
+   "key": "L10#35961 fires on ' his', ' the', ' P', ' a' -> promotes 'ellite', 'ersed', ' Kingdom', 'utm'"
+  },
+  {
+   "rank": 5,
+   "contribution": -0.1220090240240097,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#15130 fires on ' contains', ' contain', ' containing', ' contained' -> promotes ' m\u1ebd', '.shift', '\ufffd\u65b0', 'nes'",
+   "key": "L7#70063 fires on ' do', ' the', ' his', '-' -> promotes 'urrect', 'roud', 'ellite', ' Mick'"
+  }
+ ],
+ "top_key_features": [
+  {
+   "contribution": 0.9322258234024048,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L10#35961 fires on ' his', ' the', ' P', ' a' -> promotes 'ellite', 'ersed', ' Kingdom', 'utm'"
+  },
+  {
+   "contribution": -0.606686532497406,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L11#91721 fires on '1', '2', ' the', ' an' -> promotes 'advisor', 'fest', '&gt', 'ickets'"
+  },
+  {
+   "contribution": 0.2926639914512634,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L11#31057 fires on ' his', ' the', ' P', ' a' -> promotes 'ataire', 'th\u00e8', '\ufffd\ufffd', '\u043e\u043d\u0430'"
+  },
+  {
+   "contribution": 0.29106518626213074,
+   "key_position": 3,
+   "key_token": " of",
+   "key": "L7#68729 fires on 'UL', 'ombo', 'u', 'AT' -> promotes ' city', '\ufffd', 'e\u00f1a', ' p'"
+  },
+  {
+   "contribution": 0.2839588224887848,
+   "key_position": 2,
+   "key_token": " capital",
+   "key": "L7#68729 fires on 'UL', 'ombo', 'u', 'AT' -> promotes ' city', '\ufffd', 'e\u00f1a', ' p'"
+  },
+  {
+   "contribution": 0.2690327763557434,
+   "key_position": 5,
+   "key_token": " state",
+   "key": "L10#141346 fires on ' state', ' State', ' states', ' States' -> promotes '\u0131nd', '-level', '####\u23ce', '\u516c\u6c11'"
+  }
+ ]
+}

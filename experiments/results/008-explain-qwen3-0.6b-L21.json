@@ -1,0 +1,142 @@
+{
+ "model": "Qwen/Qwen3-0.6B",
+ "graph": "spike_out/graph.pt",
+ "scan": "mwhanna/qwen3-0.6b-transcoders-lowl0",
+ "seed": 0,
+ "seq": 9,
+ "model_dtype": "torch.float32",
+ "transcoder_dtype": "torch.bfloat16",
+ "graph_dtype": "torch.bfloat16",
+ "n_features": 3165,
+ "layer": 21,
+ "head": 3,
+ "query_position": 8,
+ "tokens": [
+  "<|im_end|>",
+  "The",
+  " capital",
+  " of",
+  " the",
+  " state",
+  " containing",
+  " Dallas",
+  " is"
+ ],
+ "attends_to": [
+  {
+   "position": 0,
+   "token": "<|im_end|>",
+   "probability": 0.6454931497573853
+  },
+  {
+   "position": 1,
+   "token": "The",
+   "probability": 0.1868647038936615
+  },
+  {
+   "position": 8,
+   "token": " is",
+   "probability": 0.09500055015087128
+  },
+  {
+   "position": 2,
+   "token": " capital",
+   "probability": 0.02386610396206379
+  },
+  {
+   "position": 3,
+   "token": " of",
+   "probability": 0.01741298846900463
+  }
+ ],
+ "reconstruction_error": 0.0011159231653437018,
+ "feature_share": 0.09647305309772491,
+ "pairs": [
+  {
+   "rank": 0,
+   "contribution": 0.04621437191963196,
+   "key_position": 5,
+   "key_token": " state",
+   "query": "L1#64785 (inactive)",
+   "key": "L20#64953 fires on ' states', ' State', ' state', ' States' -> promotes 'MENT', 'nement', 'hood', 'wide'"
+  },
+  {
+   "rank": 1,
+   "contribution": 0.043603647500276566,
+   "key_position": 2,
+   "key_token": " capital",
+   "query": "L1#38418 fires on '<|im_end|>', '<|im_start|>', '<think>', ' Medi' -> promotes ' Operators', '\u043b\u0430\u0442', '\u9928', ' scientists'",
+   "key": "L20#126331 fires on ' capital', ' Capital', ' capitals', 'itol' -> promotes 'ibur', 'itulo', 'itol', 'itals'"
+  },
+  {
+   "rank": 2,
+   "contribution": 0.036871567368507385,
+   "key_position": 2,
+   "key_token": " capital",
+   "query": "L1#56684 fires on '<|im_end|>', '<think>', ' to', '.the' -> promotes 'ittest', ' employees', 'ryption', 'ICLE'",
+   "key": "L20#126331 fires on ' capital', ' Capital', ' capitals', 'itol' -> promotes 'ibur', 'itulo', 'itol', 'itals'"
+  },
+  {
+   "rank": 3,
+   "contribution": 0.035611581057310104,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#38418 fires on '<|im_end|>', '<|im_start|>', '<think>', ' Medi' -> promotes ' Operators', '\u043b\u0430\u0442', '\u9928', ' scientists'",
+   "key": "L11#91721 fires on '1', '2', ' the', ' an' -> promotes 'advisor', 'fest', '&gt', 'ickets'"
+  },
+  {
+   "rank": 4,
+   "contribution": 0.03530135750770569,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#66555 fires on ' work', 'Work', 'work', ' Thr' -> promotes ' cass', '\u89c1\u8bc1\u4e86', 'elters', 'unders'",
+   "key": "L11#91721 fires on '1', '2', ' the', ' an' -> promotes 'advisor', 'fest', '&gt', 'ickets'"
+  },
+  {
+   "rank": 5,
+   "contribution": 0.03412571921944618,
+   "key_position": 5,
+   "key_token": " state",
+   "query": "L1#66555 fires on ' work', 'Work', 'work', ' Thr' -> promotes ' cass', '\u89c1\u8bc1\u4e86', 'elters', 'unders'",
+   "key": "L20#64953 fires on ' states', ' State', ' state', ' States' -> promotes 'MENT', 'nement', 'hood', 'wide'"
+  }
+ ],
+ "top_key_features": [
+  {
+   "contribution": 0.3295266628265381,
+   "key_position": 2,
+   "key_token": " capital",
+   "key": "L20#126331 fires on ' capital', ' Capital', ' capitals', 'itol' -> promotes 'ibur', 'itulo', 'itol', 'itals'"
+  },
+  {
+   "contribution": -0.3260335624217987,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L10#35961 fires on ' his', ' the', ' P', ' a' -> promotes 'ellite', 'ersed', ' Kingdom', 'utm'"
+  },
+  {
+   "contribution": -0.2899274528026581,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L7#70063 fires on ' do', ' the', ' his', '-' -> promotes 'urrect', 'roud', 'ellite', ' Mick'"
+  },
+  {
+   "contribution": 0.2690224349498749,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L20#132183 fires on ' the', 'the', ' The', 'The' -> promotes ' absence', ' following', ' latter', 'ses'"
+  },
+  {
+   "contribution": 0.26198816299438477,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L12#42334 fires on ' the', ' D', '2', ' The' -> promotes '_executor', '\u0436\u0430', '.onNext', '\u8bfb\u540e'"
+  },
+  {
+   "contribution": -0.22967985272407532,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L12#99454 fires on ' the', '-', '1', '3' -> promotes ' Bust', '\u8ddf\u4ed6', 'ar\u0131', ' His'"
+  }
+ ]
+}
