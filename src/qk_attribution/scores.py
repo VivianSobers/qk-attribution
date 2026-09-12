@@ -31,6 +31,7 @@ import torch
 from torch import Tensor
 
 from qk_attribution.circuits import (
+    _BILINEAR_POSITION_SCHEMES,
     UnsupportedArchitecture,
     architecture_notes,
     attention_block,
@@ -50,11 +51,18 @@ def require_supported(model: object) -> None:
     Raises:
         UnsupportedArchitecture: if soft-capping is enabled.
     """
-    cap = architecture_notes(model)["score_soft_cap"]
+    notes = architecture_notes(model)
+    cap = notes["score_soft_cap"]
     if cap is not None:
         raise UnsupportedArchitecture(
             f"attention scores are soft-capped at {cap}, which is not a bilinear form; "
             "the cap would have to be linearised or frozen first"
+        )
+    scheme = notes["positional_embedding_type"]
+    if scheme not in _BILINEAR_POSITION_SCHEMES:
+        raise UnsupportedArchitecture(
+            f"positional embedding type {scheme!r} adds a term outside the bilinear form; "
+            "only learned absolute positions and rotary embeddings are handled"
         )
 
 

@@ -96,6 +96,7 @@ def test_plain_architecture_is_accepted():
     notes = architecture_notes(model)
     assert notes == {
         "rotary": False,
+        "positional_embedding_type": "standard",
         "rotary_dim": None,
         "qk_norm": False,
         "score_soft_cap": None,
@@ -237,3 +238,38 @@ def test_effective_rank_accepts_cuda_tensors():
         pytest.skip("no CUDA device")
     spectrum = torch.tensor([4.0, 3.0, 2.0, 1.0], device="cuda")
     assert effective_rank(spectrum, energy=0.9) == effective_rank(spectrum.cpu(), energy=0.9)
+
+
+def test_attention_scale_is_one_when_the_model_disables_scaling():
+    """A missed flag here scales every score by sqrt(d_head) and nothing else fails."""
+    model = make_model()
+    model.cfg.use_attn_scale = False
+    assert attention_scale(model) == 1.0
+
+
+def test_attention_scale_is_unchanged_when_scaling_is_enabled():
+    model = make_model(attn_scale=4.0)
+    model.cfg.use_attn_scale = True
+    assert attention_scale(model) == pytest.approx(4.0)
+
+
+@pytest.mark.parametrize("size", [1, 5, 64])
+def test_effective_rank_never_exceeds_the_component_count(size: int):
+    spectrum = torch.linspace(1.0, 0.01, size)
+    assert effective_rank(spectrum, energy=1.0) <= size
+
+
+def test_effective_rank_of_a_flat_spectrum_at_full_energy():
+    assert effective_rank(torch.ones(64), energy=1.0) == 64
+
+
+@pytest.mark.parametrize("scheme", ["alibi", "shortformer", "relative_positional_bias"])
+def test_unknown_position_schemes_are_refused(scheme: str):
+    """ALiBi and friends add a term outside the bilinear form and used to pass the guard."""
+    model = make_model(positional_embedding_type=scheme)
+    with pytest.raises(UnsupportedArchitecture, match="positional embedding type"):
+        require_plain_qk(model)
+
+
+def test_architecture_notes_report_the_position_scheme():
+    assert architecture_notes(make_model())["positional_embedding_type"] == "standard"

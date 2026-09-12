@@ -35,6 +35,10 @@ from __future__ import annotations
 import torch
 from torch import Tensor
 
+#: Position schemes that leave the attention score bilinear in the residual stream. Anything else,
+#: ALiBi and shortformer among them, adds a term this decomposition does not model.
+_BILINEAR_POSITION_SCHEMES = frozenset({"standard", "rotary", None})
+
 
 class UnsupportedArchitecture(RuntimeError):
     """Raised when a model's attention cannot be expressed as a single bilinear QK form."""
@@ -90,8 +94,15 @@ def kv_head_for(model: object, head: int) -> int:
 
 
 def attention_scale(model: object) -> float:
-    """Divisor applied to raw attention scores, normally ``sqrt(d_head)``."""
+    """Divisor applied to raw attention scores, normally ``sqrt(d_head)``.
+
+    A model can switch scaling off entirely, in which case the divisor is 1 and using
+    ``sqrt(d_head)`` anyway would scale every score and every contribution by a constant without
+    anything failing.
+    """
     cfg = getattr(model, "cfg", None)
+    if cfg is not None and getattr(cfg, "use_attn_scale", True) is False:
+        return 1.0
     scale = getattr(cfg, "attn_scale", None) if cfg is not None else None
     return float(scale) if scale else float(d_head(model) ** 0.5)
 
@@ -107,9 +118,10 @@ def architecture_notes(model: object) -> dict[str, object]:
     attn = attention_block(model, 0)
     pos_type = getattr(cfg, "positional_embedding_type", None) if cfg is not None else None
     soft_cap = getattr(cfg, "attn_scores_soft_cap", None) if cfg is not None else None
-    qk_norm = bool(getattr(cfg, "use_qk_norm", False)) or hasattr(attn, "q_norm")
+    qk_norm = bool(getattr(cfg, "use_qk_norm", False)) or getattr(attn, "q_norm", None) is not None
     return {
         "rotary": pos_type == "rotary",
+        "positional_embedding_type": pos_type,
         "rotary_dim": getattr(cfg, "rotary_dim", None) if cfg is not None else None,
         "qk_norm": qk_norm,
         # TransformerLens signals "disabled" with a non-positive value.
@@ -128,6 +140,12 @@ def require_plain_qk(model: object) -> None:
     problems = []
     if notes["rotary"]:
         problems.append("rotary position embeddings make the QK operator offset-dependent")
+    position_scheme = notes["positional_embedding_type"]
+    if position_scheme not in _BILINEAR_POSITION_SCHEMES and not notes["rotary"]:
+        problems.append(
+            f"positional embedding type {position_scheme!r} is not known to leave the score "
+            "bilinear in the residual stream"
+        )
     if notes["qk_norm"]:
         problems.append("query/key normalisation rescales q and k after projection")
     if notes["score_soft_cap"] is not None:
@@ -273,5 +291,7 @@ def effective_rank(singular_values: Tensor, energy: float = 0.99) -> int:
         raise ValueError("singular_values must be a non-empty 1D tensor")
     squared = singular_values.float() ** 2
     cumulative = torch.cumsum(squared, dim=0) / squared.sum()
-    # Counting rather than searchsorted so the comparison stays on the input's own device.
-    return int((cumulative < energy).sum().item()) + 1
+    # Counting rather than searchsorted so the comparison stays on the input's own device. The
+    # cumulative sum can land just below 1 in floating point, so at energy=1 the count would
+    # otherwise run one past the end.
+    return min(int((cumulative < energy).sum().item()) + 1, singular_values.numel())

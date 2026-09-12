@@ -378,3 +378,10 @@ def test_head_space_follows_the_directions_dtype():
         qk_scale=None,
     )
     assert got.dtype == torch.bfloat16
+
+
+@pytest.mark.parametrize("scheme", ["alibi", "shortformer"])
+def test_score_reconstruction_refuses_unknown_position_schemes(scheme: str):
+    model = make_model(positional_embedding_type=scheme)
+    with pytest.raises(UnsupportedArchitecture, match="positional embedding type"):
+        require_supported(model)
