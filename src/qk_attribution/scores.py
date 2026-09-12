@@ -76,9 +76,9 @@ def attention_input(model: object, cache: object, layer: int) -> Tensor:
     normalized = cache[f"blocks.{layer}.ln1.hook_normalized"]  # type: ignore[index]
     if normalized.ndim == 3:
         normalized = normalized[0]
-    scaled = normalized * ln1.w
+    scaled = normalized * ln1.w.to(normalized.dtype)
     bias = getattr(ln1, "b", None)
-    return scaled + bias if bias is not None else scaled
+    return scaled + bias.to(scaled.dtype) if bias is not None else scaled
 
 
 def qk_norm_scales(model: object, cache: object, layer: int) -> tuple[Tensor, Tensor] | None:
@@ -212,8 +212,8 @@ def attention_scores(
     attn = attention_block(model, layer)
     notes = architecture_notes(model)
 
-    query = residual @ query_projection(model, layer, head)
-    key = residual @ key_projection(model, layer, head)
+    query = residual @ query_projection(model, layer, head).to(residual.dtype)
+    key = residual @ key_projection(model, layer, head).to(residual.dtype)
     query, key = _add_projection_bias(attn, head, query, key)
 
     if notes["qk_norm"]:
@@ -222,8 +222,8 @@ def attention_scores(
                 "this model applies QK-norm, so query_scale and key_scale are required; "
                 "take them from qk_norm_scales()"
             )
-        query = query / _check_scale(query_scale, seq, "query_scale")
-        key = key / _check_scale(key_scale, seq, "key_scale")
+        query = query / _check_scale(query_scale, seq, "query_scale").to(query.dtype)
+        key = key / _check_scale(key_scale, seq, "key_scale").to(key.dtype)
 
     if notes["rotary"]:
         if rotations is None:
@@ -254,7 +254,7 @@ def _add_projection_bias(
             continue
         module = getattr(attn, norm, None)
         gain = bias[head] * module.w if module is not None else bias[head]
-        out.append(vector + gain)
+        out.append(vector + gain.to(vector.dtype))
     return out[0], out[1]
 
 
@@ -331,9 +331,11 @@ def to_head_space(
             "carry it as a separate source instead"
         )
     projection = query_projection if side == "query" else key_projection
-    out = (directions * ln1.w / norm_scale[positions]) @ projection(model, layer, head)
+    dtype = directions.dtype
+    scaled = directions * ln1.w.to(dtype) / norm_scale[positions].to(dtype)
+    out = scaled @ projection(model, layer, head).to(dtype)
     if qk_scale is not None:
-        out = out / qk_scale[positions]
+        out = out / qk_scale[positions].to(dtype)
     if rotations is not None:
         out = torch.einsum("na,nab->nb", out, rotations[positions].to(out.dtype))
     return out

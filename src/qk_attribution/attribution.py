@@ -131,7 +131,7 @@ def qk_attribution(
         norm_scale=norm_scale,
         qk_scale=key_scale,
     )
-    contributions = left @ right.transpose(-1, -2) / attention_scale(model)
+    contributions = left @ right.transpose(-1, -2).to(left.dtype) / attention_scale(model)
     return QKAttribution(
         contributions=contributions,
         query_sources=query_sources,

@@ -344,3 +344,37 @@ def test_to_head_space_rejects_mismatched_position_count():
             norm_scale=torch.ones(SEQ, 1),
             qk_scale=None,
         )
+
+
+@pytest.mark.parametrize("dtype", [torch.bfloat16, torch.float16])
+def test_scores_follow_the_residuals_dtype(dtype: torch.dtype):
+    """Graphs are built in bfloat16, so a low-precision residual must not meet float32 weights."""
+    model = rotary_model(use_qk_norm=True)
+    resid = residual().to(dtype)
+    scale_q, scale_k = scales(model, 0, 1, residual())
+    got = attention_scores(
+        model,
+        0,
+        1,
+        resid,
+        query_scale=scale_q.to(dtype),
+        key_scale=scale_k.to(dtype),
+        rotations=rotation_matrices(model, SEQ).to(dtype),
+    )
+    assert got.dtype == dtype
+
+
+def test_head_space_follows_the_directions_dtype():
+    model = make_model()
+    got = to_head_space(
+        model,
+        0,
+        0,
+        residual().to(torch.bfloat16),
+        torch.arange(SEQ),
+        side="query",
+        rotations=None,
+        norm_scale=torch.ones(SEQ, 1),
+        qk_scale=None,
+    )
+    assert got.dtype == torch.bfloat16
