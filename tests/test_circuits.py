@@ -28,40 +28,7 @@ from qk_attribution.circuits import (
     qk_matrix,
     require_plain_qk,
 )
-
-D_MODEL, D_HEAD, N_HEADS, N_LAYERS = 6, 3, 4, 2
-
-
-def make_model(
-    *,
-    n_key_value_heads: int | None = None,
-    positional_embedding_type: str = "standard",
-    use_qk_norm: bool = False,
-    attn_scores_soft_cap: float = -1.0,
-    attn_scale: float | None = None,
-    seed: int = 0,
-) -> SimpleNamespace:
-    """Build a stub exposing the attention surface the module reads."""
-    gen = torch.Generator().manual_seed(seed)
-
-    def blk() -> SimpleNamespace:
-        attn = SimpleNamespace(
-            W_Q=torch.randn(N_HEADS, D_MODEL, D_HEAD, generator=gen),
-            W_K=torch.randn(N_HEADS, D_MODEL, D_HEAD, generator=gen),
-            W_V=torch.randn(N_HEADS, D_MODEL, D_HEAD, generator=gen),
-            W_O=torch.randn(N_HEADS, D_HEAD, D_MODEL, generator=gen),
-        )
-        return SimpleNamespace(attn=attn)
-
-    cfg = SimpleNamespace(
-        n_key_value_heads=n_key_value_heads,
-        positional_embedding_type=positional_embedding_type,
-        use_qk_norm=use_qk_norm,
-        attn_scores_soft_cap=attn_scores_soft_cap,
-        attn_scale=attn_scale if attn_scale is not None else D_HEAD**0.5,
-        rotary_dim=D_HEAD if positional_embedding_type == "rotary" else None,
-    )
-    return SimpleNamespace(blocks=[blk() for _ in range(N_LAYERS)], cfg=cfg)
+from tests.stubs import D_HEAD, D_MODEL, N_HEADS, N_LAYERS, make_model
 
 
 def test_dimensions_read_from_weights():
