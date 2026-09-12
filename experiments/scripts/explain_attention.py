@@ -30,8 +30,12 @@ from qk_attribution.scores import (
 
 extra = parser(__doc__.splitlines()[0])
 extra.add_argument("--layer", type=int, default=None, help="defaults to three quarters depth")
-extra.add_argument("--head", type=int, default=None, help="defaults to the head with the "
-                   "most concentrated attention from the query position")
+extra.add_argument(
+    "--head",
+    type=int,
+    default=None,
+    help="defaults to the head with the most concentrated attention from the query position",
+)
 extra.add_argument("--query-position", type=int, default=None, help="defaults to the last token")
 extra.add_argument("--pairs", type=int, default=12)
 extra.add_argument("--no-labels", action="store_true", help="skip the metadata downloads")
@@ -162,9 +166,7 @@ for index in key_flat.tolist():
     key_rows_out.append(entry)
     print(f"  {entry['contribution']:+8.4f}  pos {position} {tokens[position]!r}  {entry['key']}")
 
-feature_share = (
-    block.sum(dim=0).abs().sum() / result.contributions.abs().sum()
-).item()
+feature_share = (block.sum(dim=0).abs().sum() / result.contributions.abs().sum()).item()
 print(f"\nfeature-feature terms are {feature_share:.1%} of the total contribution magnitude")
 
 with open(args.out, "w") as fh:
