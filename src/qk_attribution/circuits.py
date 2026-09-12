@@ -40,7 +40,7 @@ class UnsupportedArchitecture(RuntimeError):
     """Raised when a model's attention cannot be expressed as a single bilinear QK form."""
 
 
-def _attn(model: object, layer: int) -> object:
+def attention_block(model: object, layer: int) -> object:
     """Return the attention submodule for one block, without stacking other layers."""
     blocks = getattr(model, "blocks", None)
     if blocks is None:
@@ -60,7 +60,7 @@ def n_layers(model: object) -> int:
 
 def n_heads(model: object) -> int:
     """Number of query heads."""
-    return int(_attn(model, 0).W_Q.shape[0])  # type: ignore[attr-defined]
+    return int(attention_block(model, 0).W_Q.shape[0])  # type: ignore[attr-defined]
 
 
 def n_kv_heads(model: object) -> int:
@@ -72,7 +72,7 @@ def n_kv_heads(model: object) -> int:
 
 def d_head(model: object) -> int:
     """Head dimension."""
-    return int(_attn(model, 0).W_Q.shape[2])  # type: ignore[attr-defined]
+    return int(attention_block(model, 0).W_Q.shape[2])  # type: ignore[attr-defined]
 
 
 def kv_head_for(model: object, head: int) -> int:
@@ -104,7 +104,7 @@ def architecture_notes(model: object) -> dict[str, object]:
     :func:`require_plain_qk`.
     """
     cfg = getattr(model, "cfg", None)
-    attn = _attn(model, 0)
+    attn = attention_block(model, 0)
     pos_type = getattr(cfg, "positional_embedding_type", None) if cfg is not None else None
     soft_cap = getattr(cfg, "attn_scores_soft_cap", None) if cfg is not None else None
     qk_norm = bool(getattr(cfg, "use_qk_norm", False)) or hasattr(attn, "q_norm")
@@ -155,7 +155,7 @@ def qk_matrix(model: object, layer: int, head: int, *, scaled: bool = False) -> 
     Returns:
         Tensor of shape ``(d_model, d_model)``.
     """
-    attn = _attn(model, layer)
+    attn = attention_block(model, layer)
     heads = n_heads(model)
     if not 0 <= head < heads:
         raise IndexError(f"head {head} out of range for {heads} heads")
@@ -174,7 +174,7 @@ def ov_matrix(model: object, layer: int, head: int) -> Tensor:
     Returns:
         Tensor of shape ``(d_model, d_model)``.
     """
-    attn = _attn(model, layer)
+    attn = attention_block(model, layer)
     heads = n_heads(model)
     if not 0 <= head < heads:
         raise IndexError(f"head {head} out of range for {heads} heads")
