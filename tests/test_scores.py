@@ -18,11 +18,13 @@ from qk_attribution.scores import (
     attention_input,
     attention_scores,
     key_projection,
+    layernorm_scale,
     qk_norm_scales,
     query_projection,
     relative_rotation,
     require_supported,
     rotation_matrices,
+    to_head_space,
 )
 from tests.stubs import D_MODEL, N_HEADS, make_model, reference_scores
 
@@ -216,3 +218,126 @@ def test_qk_norm_scales_restore_the_head_axis():
 
 def test_qk_norm_scales_are_none_without_qk_norm():
     assert qk_norm_scales(make_model(), {}, 0) is None
+
+
+def test_layernorm_scale_drops_the_batch_axis():
+    cache = {"blocks.0.ln1.hook_scale": torch.ones(1, SEQ, 1) * 3.0}
+    torch.testing.assert_close(layernorm_scale(cache, 0), torch.ones(SEQ, 1) * 3.0)
+
+
+def test_to_head_space_matches_projecting_the_residual_directly():
+    """A set of directions, one per position, must project the way the residual does."""
+    model = rotary_model(use_qk_norm=True)
+    resid = residual()
+    scale_q, _ = scales(model, 0, 2, resid)
+    rotations = rotation_matrices(model, SEQ)
+    got = to_head_space(
+        model,
+        0,
+        2,
+        resid,
+        torch.arange(SEQ),
+        side="query",
+        rotations=rotations,
+        norm_scale=torch.ones(SEQ, 1),
+        qk_scale=scale_q,
+    )
+    expected = torch.einsum(
+        "pa,pab->pb", (resid @ query_projection(model, 0, 2)) / scale_q, rotations
+    )
+    torch.testing.assert_close(got, expected)
+
+
+def test_to_head_space_divides_by_the_layernorm_scale():
+    model = make_model()
+    resid = residual()
+    norm = torch.arange(1.0, SEQ + 1).unsqueeze(-1)
+    got = to_head_space(
+        model,
+        0,
+        1,
+        resid,
+        torch.arange(SEQ),
+        side="key",
+        rotations=None,
+        norm_scale=norm,
+        qk_scale=None,
+    )
+    torch.testing.assert_close(got, (resid / norm) @ key_projection(model, 0, 1))
+
+
+def test_to_head_space_uses_the_key_projection_for_the_key_side():
+    model = make_model()
+    resid = residual()
+    got = to_head_space(
+        model,
+        0,
+        1,
+        resid,
+        torch.arange(SEQ),
+        side="key",
+        rotations=None,
+        norm_scale=torch.ones(SEQ, 1),
+        qk_scale=None,
+    )
+    torch.testing.assert_close(got, resid @ key_projection(model, 0, 1))
+
+
+def test_to_head_space_reads_the_rotation_of_each_rows_own_position():
+    """Two rows at different positions must be rotated differently."""
+    model = rotary_model()
+    rotations = rotation_matrices(model, SEQ)
+    direction = torch.ones(1, D_MODEL)
+    first = to_head_space(
+        model,
+        0,
+        0,
+        direction,
+        torch.tensor([0]),
+        side="query",
+        rotations=rotations,
+        norm_scale=torch.ones(SEQ, 1),
+        qk_scale=None,
+    )
+    later = to_head_space(
+        model,
+        0,
+        0,
+        direction,
+        torch.tensor([3]),
+        side="query",
+        rotations=rotations,
+        norm_scale=torch.ones(SEQ, 1),
+        qk_scale=None,
+    )
+    assert not torch.allclose(first, later)
+
+
+def test_to_head_space_rejects_an_unknown_side():
+    with pytest.raises(ValueError, match="side must be"):
+        to_head_space(
+            make_model(),
+            0,
+            0,
+            residual(),
+            torch.arange(SEQ),
+            side="value",
+            rotations=None,
+            norm_scale=torch.ones(SEQ, 1),
+            qk_scale=None,
+        )
+
+
+def test_to_head_space_rejects_mismatched_position_count():
+    with pytest.raises(ValueError, match="positions for"):
+        to_head_space(
+            make_model(),
+            0,
+            0,
+            residual(),
+            torch.arange(SEQ - 1),
+            side="query",
+            rotations=None,
+            norm_scale=torch.ones(SEQ, 1),
+            qk_scale=None,
+        )

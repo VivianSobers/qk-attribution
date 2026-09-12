@@ -266,3 +266,66 @@ def _check_scale(scale: Tensor, seq: int, name: str) -> Tensor:
     if scale.ndim != 2 or scale.shape[1] != 1:
         raise ValueError(f"{name} must be (seq, 1), got {tuple(scale.shape)}")
     return scale
+
+
+def layernorm_scale(cache: object, layer: int) -> Tensor:
+    """Return the RMS scale that ``ln1`` divides by, shaped ``(seq, 1)``.
+
+    A feature's decoder direction enters the residual stream before this division, so mapping it
+    into attention means dividing by the same per-position scalar. It is frozen, exactly as
+    circuit-tracer already freezes it.
+    """
+    scale = cache[f"blocks.{layer}.ln1.hook_scale"]  # type: ignore[index]
+    if scale.ndim == 3:
+        scale = scale[0]
+    return scale
+
+
+def to_head_space(
+    model: object,
+    layer: int,
+    head: int,
+    directions: Tensor,
+    positions: Tensor,
+    *,
+    side: str,
+    rotations: Tensor | None,
+    norm_scale: Tensor,
+    qk_scale: Tensor | None,
+) -> Tensor:
+    """Project residual-stream directions into one head's rotated query or key space.
+
+    This is the same path :func:`attention_scores` takes, applied to individual directions rather
+    than to the whole residual, which is what makes the decomposition possible: each direction can
+    be projected once and the interaction between any query-side and key-side pair is then a dot
+    product.
+
+    Args:
+        model: A HookedTransformer-backed model.
+        layer: Block index.
+        head: Query-head index.
+        directions: Rows in residual-stream coordinates, shaped ``(n, d_model)``, each already
+            scaled by its feature's activation.
+        positions: Sequence position of each row, shaped ``(n,)``, used to pick the rotation and
+            the frozen scales.
+        side: ``"query"`` or ``"key"``.
+        rotations: From :func:`rotation_matrices`, or None for a model without rotary embeddings.
+        norm_scale: From :func:`layernorm_scale`, shaped ``(seq, 1)``.
+        qk_scale: QK-norm scale for this head, shaped ``(seq, 1)``, or None without QK-norm.
+
+    Returns:
+        Tensor of shape ``(n, d_head)``.
+    """
+    if side not in ("query", "key"):
+        raise ValueError(f"side must be 'query' or 'key', got {side!r}")
+    if directions.ndim != 2:
+        raise ValueError(f"directions must be 2D (n, d_model), got {tuple(directions.shape)}")
+    if positions.shape[0] != directions.shape[0]:
+        raise ValueError(f"{positions.shape[0]} positions for {directions.shape[0]} directions")
+    projection = query_projection if side == "query" else key_projection
+    out = (directions / norm_scale[positions]) @ projection(model, layer, head)
+    if qk_scale is not None:
+        out = out / qk_scale[positions]
+    if rotations is not None:
+        out = torch.einsum("na,nab->nb", out, rotations[positions].to(out.dtype))
+    return out
