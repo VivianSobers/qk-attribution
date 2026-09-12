@@ -134,3 +134,11 @@ def test_inconsistent_adjacency_size_is_rejected():
 def test_empty_prompt_is_rejected():
     with pytest.raises(ValueError, match="n_pos must be positive"):
         NodeLayout(n_features=1, n_layers=1, n_pos=0, n_logits=1)
+
+
+def test_empty_prompt_graph_is_rejected_before_dividing():
+    """A zero-length prompt used to reach a modulo and raise ZeroDivisionError instead."""
+    graph = StubGraph.build(**SPIKE)
+    graph.input_tokens = torch.zeros(0, dtype=torch.int64)
+    with pytest.raises(ValueError, match="n_pos must be positive"):
+        NodeLayout.from_graph(graph)

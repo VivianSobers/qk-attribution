@@ -78,6 +78,8 @@ class NodeLayout:
         n_pos = len(graph.input_tokens)
         n_logits = len(graph.logit_targets)
         total = int(graph.adjacency_matrix.shape[0])
+        if n_pos == 0:
+            raise ValueError("n_pos must be positive; an empty prompt has no graph")
 
         remainder = total - n_features - n_pos - n_logits
         if remainder < 0 or remainder % n_pos != 0:
