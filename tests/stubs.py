@@ -86,7 +86,8 @@ def make_model(
             attn.q_norm = SimpleNamespace(w=torch.rand(d_head, generator=gen) + 0.5)
             attn.k_norm = SimpleNamespace(w=torch.rand(d_head, generator=gen) + 0.5)
         ln1 = SimpleNamespace(w=torch.rand(d_model, generator=gen) + 0.5)
-        return SimpleNamespace(attn=attn, ln1=ln1)
+        ln2 = SimpleNamespace(w=torch.rand(d_model, generator=gen) + 0.5)
+        return SimpleNamespace(attn=attn, ln1=ln1, ln2=ln2)
 
     cfg = SimpleNamespace(
         n_key_value_heads=n_key_value_heads,
