@@ -11,7 +11,12 @@ from __future__ import annotations
 import pytest
 import torch
 
-from qk_attribution.features import SourceSet, feature_sources
+from qk_attribution.features import (
+    REMAINDER,
+    SourceSet,
+    feature_sources,
+    remainder_sources,
+)
 from tests.stubs import StubGraph, StubTranscoders
 
 D_MODEL, N_LAYERS = 6, 8
@@ -96,3 +101,36 @@ def test_at_position_with_no_matches_is_empty():
     graph = StubGraph.with_features([(0, 1, 5)], activations=[1.0])
     sources = feature_sources(graph, transcoders(), below_layer=5)
     assert len(sources.at_position(3)) == 0
+
+
+def test_remainder_sources_carry_one_row_per_position():
+    remainder = torch.randn(4, D_MODEL, generator=torch.Generator().manual_seed(21))
+    sources = remainder_sources(remainder)
+    assert len(sources) == 4
+    assert sources.positions.tolist() == [0, 1, 2, 3]
+    torch.testing.assert_close(sources.directions, remainder)
+
+
+def test_remainder_sources_are_marked_as_not_features():
+    sources = remainder_sources(torch.zeros(3, D_MODEL))
+    assert sources.is_remainder.all()
+    assert sources.layers.tolist() == [REMAINDER] * 3
+
+
+def test_feature_sources_are_not_marked_as_remainder():
+    graph = StubGraph.with_features([(0, 1, 5)], activations=[1.0])
+    assert not feature_sources(graph, transcoders(), below_layer=3).is_remainder.any()
+
+
+def test_remainder_sources_reject_a_batched_tensor():
+    with pytest.raises(ValueError, match="must be 2D"):
+        remainder_sources(torch.zeros(1, 4, D_MODEL))
+
+
+def test_concat_joins_both_sets_in_order():
+    graph = StubGraph.with_features([(0, 1, 5)], activations=[2.0])
+    features = feature_sources(graph, transcoders(), below_layer=3)
+    combined = features.concat(remainder_sources(torch.zeros(4, D_MODEL)))
+    assert len(combined) == 5
+    assert combined.is_remainder.tolist() == [False, True, True, True, True]
+    torch.testing.assert_close(combined.directions[0], features.directions[0])

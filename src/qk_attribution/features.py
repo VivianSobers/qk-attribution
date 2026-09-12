@@ -19,6 +19,9 @@ from torch import Tensor
 
 LAYER, POSITION, FEATURE = 0, 1, 2
 
+#: Sentinel layer and feature id for a source that is not a transcoder feature.
+REMAINDER = -1
+
 
 @dataclass(frozen=True)
 class SourceSet:
@@ -37,6 +40,21 @@ class SourceSet:
 
     def __len__(self) -> int:
         return int(self.directions.shape[0])
+
+    def concat(self, other: SourceSet) -> SourceSet:
+        """Return the two source sets joined, so a decomposition over both is exhaustive."""
+        return SourceSet(
+            directions=torch.cat([self.directions, other.directions.to(self.directions.dtype)]),
+            positions=torch.cat([self.positions, other.positions]),
+            layers=torch.cat([self.layers, other.layers]),
+            feature_ids=torch.cat([self.feature_ids, other.feature_ids]),
+            activations=torch.cat([self.activations, other.activations]),
+        )
+
+    @property
+    def is_remainder(self) -> Tensor:
+        """Boolean mask marking rows that stand for what no feature explains."""
+        return self.layers == REMAINDER
 
     def at_position(self, position: int) -> SourceSet:
         """Return the subset sitting at one sequence position."""
@@ -96,4 +114,32 @@ def feature_sources(
         layers=layers.to(device),
         feature_ids=feature_ids.to(device),
         activations=activations.to(device),
+    )
+
+
+def remainder_sources(remainder: Tensor) -> SourceSet:
+    """Wrap the unexplained part of a residual stream as one source per position.
+
+    Transcoder features cover only the MLP writes. Earlier attention outputs, the token embedding,
+    transcoder errors and decoder biases are all in the residual too, and dropping them would make
+    the decomposition silently incomplete. Carrying them as a single lumped direction per position
+    keeps the expansion exhaustive: the contributions then sum to the true score, and the share
+    carried by real features is visible rather than assumed.
+
+    Args:
+        remainder: Output of ``attribution.residual_remainder``, shaped ``(seq, d_model)``.
+
+    Returns:
+        A :class:`SourceSet` with one row per position, marked by :data:`REMAINDER`.
+    """
+    if remainder.ndim != 2:
+        raise ValueError(f"remainder must be 2D (seq, d_model), got {tuple(remainder.shape)}")
+    seq = remainder.shape[0]
+    device = remainder.device
+    return SourceSet(
+        directions=remainder,
+        positions=torch.arange(seq, device=device),
+        layers=torch.full((seq,), REMAINDER, dtype=torch.int64, device=device),
+        feature_ids=torch.full((seq,), REMAINDER, dtype=torch.int64, device=device),
+        activations=torch.ones(seq, device=device),
     )
