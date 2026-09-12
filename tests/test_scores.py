@@ -196,7 +196,7 @@ def test_attention_input_drops_the_batch_axis():
     model = make_model()
     normalized = residual()
     cache = {"blocks.0.ln1.hook_normalized": normalized.unsqueeze(0)}
-    torch.testing.assert_close(attention_input(model, cache, 0), normalized)
+    torch.testing.assert_close(attention_input(model, cache, 0), normalized * model.blocks[0].ln1.w)
 
 
 def test_qk_norm_scales_restore_the_head_axis():
@@ -242,8 +242,9 @@ def test_to_head_space_matches_projecting_the_residual_directly():
         norm_scale=torch.ones(SEQ, 1),
         qk_scale=scale_q,
     )
+    gain = model.blocks[0].ln1.w
     expected = torch.einsum(
-        "pa,pab->pb", (resid @ query_projection(model, 0, 2)) / scale_q, rotations
+        "pa,pab->pb", ((resid * gain) @ query_projection(model, 0, 2)) / scale_q, rotations
     )
     torch.testing.assert_close(got, expected)
 
@@ -263,7 +264,8 @@ def test_to_head_space_divides_by_the_layernorm_scale():
         norm_scale=norm,
         qk_scale=None,
     )
-    torch.testing.assert_close(got, (resid / norm) @ key_projection(model, 0, 1))
+    gain = model.blocks[0].ln1.w
+    torch.testing.assert_close(got, (resid * gain / norm) @ key_projection(model, 0, 1))
 
 
 def test_to_head_space_uses_the_key_projection_for_the_key_side():
@@ -280,7 +282,8 @@ def test_to_head_space_uses_the_key_projection_for_the_key_side():
         norm_scale=torch.ones(SEQ, 1),
         qk_scale=None,
     )
-    torch.testing.assert_close(got, resid @ key_projection(model, 0, 1))
+    gain = model.blocks[0].ln1.w
+    torch.testing.assert_close(got, (resid * gain) @ key_projection(model, 0, 1))
 
 
 def test_to_head_space_reads_the_rotation_of_each_rows_own_position():

@@ -68,7 +68,8 @@ def test_contributions_sum_to_the_score_of_the_residual_they_build():
         query_scale=None,
         key_scale=None,
     )
-    direct = attention_scores(model, 0, 1, residual_from(sources))[QUERY_POSITION]
+    gain = model.blocks[0].ln1.w
+    direct = attention_scores(model, 0, 1, residual_from(sources) * gain)[QUERY_POSITION]
     torch.testing.assert_close(result.by_key_position(SEQ), direct, rtol=1e-4, atol=1e-5)
 
 
@@ -96,7 +97,7 @@ def test_contributions_sum_to_the_score_with_rotary_and_qk_norm():
         model,
         1,
         3,
-        residual_from(sources) / norm,
+        residual_from(sources) * model.blocks[1].ln1.w / norm,
         query_scale=scale_q,
         key_scale=scale_k,
         rotations=rotations,

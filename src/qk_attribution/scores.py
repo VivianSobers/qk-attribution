@@ -310,7 +310,9 @@ def to_head_space(
             the frozen scales.
         side: ``"query"`` or ``"key"``.
         rotations: From :func:`rotation_matrices`, or None for a model without rotary embeddings.
-        norm_scale: From :func:`layernorm_scale`, shaped ``(seq, 1)``.
+        norm_scale: From :func:`layernorm_scale`, shaped ``(seq, 1)``. Directions are given in
+            residual-stream coordinates before ``ln1``, so this applies ``ln1`` in full: the
+            learned gain as well as the division.
         qk_scale: QK-norm scale for this head, shaped ``(seq, 1)``, or None without QK-norm.
 
     Returns:
@@ -322,8 +324,14 @@ def to_head_space(
         raise ValueError(f"directions must be 2D (n, d_model), got {tuple(directions.shape)}")
     if positions.shape[0] != directions.shape[0]:
         raise ValueError(f"{positions.shape[0]} positions for {directions.shape[0]} directions")
+    ln1 = model.blocks[layer].ln1  # type: ignore[attr-defined]
+    if getattr(ln1, "b", None) is not None:
+        raise UnsupportedArchitecture(
+            "ln1 has a bias, which is an additive term rather than a per-direction scaling; "
+            "carry it as a separate source instead"
+        )
     projection = query_projection if side == "query" else key_projection
-    out = (directions / norm_scale[positions]) @ projection(model, layer, head)
+    out = (directions * ln1.w / norm_scale[positions]) @ projection(model, layer, head)
     if qk_scale is not None:
         out = out / qk_scale[positions]
     if rotations is not None:
