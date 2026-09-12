@@ -10,7 +10,8 @@ from __future__ import annotations
 import pytest
 import torch
 
-from qk_attribution.attribution import qk_attribution, residual_remainder
+from qk_attribution.attribution import QKAttribution, qk_attribution, residual_remainder
+from qk_attribution.circuits import UnsupportedArchitecture
 from qk_attribution.features import SourceSet
 from qk_attribution.scores import attention_scores, rotation_matrices
 from tests.stubs import D_MODEL, make_model
@@ -239,3 +240,49 @@ def test_remainder_keeps_what_the_sources_do_not_cover():
 def test_remainder_rejects_a_batched_residual():
     with pytest.raises(ValueError, match="must be 2D"):
         residual_remainder(torch.zeros(1, SEQ, D_MODEL), make_sources([0]))
+
+
+def test_a_non_zero_attention_bias_is_refused():
+    """The bias pairs with every source and with itself, and the decomposition omits those terms."""
+    model = make_model(with_bias=True)
+    sources = make_sources([0, QUERY_POSITION])
+    with pytest.raises(UnsupportedArchitecture, match="b_Q"):
+        qk_attribution(
+            model,
+            0,
+            0,
+            QUERY_POSITION,
+            query_sources=sources.at_position(QUERY_POSITION),
+            key_sources=sources,
+            rotations=None,
+            norm_scale=torch.ones(SEQ, 1),
+            query_scale=None,
+            key_scale=None,
+        )
+
+
+def test_key_position_totals_are_accumulated_in_float32():
+    """Many terms of both signs land on one position; a bfloat16 accumulator loses the result."""
+    model = make_model()
+    sources = make_sources([0, 1, QUERY_POSITION, 2], seed=31)
+    result = qk_attribution(
+        model,
+        0,
+        0,
+        QUERY_POSITION,
+        query_sources=sources.at_position(QUERY_POSITION),
+        key_sources=sources,
+        rotations=None,
+        norm_scale=torch.ones(SEQ, 1),
+        query_scale=None,
+        key_scale=None,
+    )
+    exact = result.by_key_position(SEQ)
+    low = QKAttribution(
+        contributions=result.contributions.to(torch.bfloat16),
+        query_sources=result.query_sources,
+        key_sources=result.key_sources,
+        query_position=result.query_position,
+    ).by_key_position(SEQ)
+    assert low.dtype == torch.bfloat16
+    torch.testing.assert_close(low.float(), exact, rtol=0.05, atol=0.05)

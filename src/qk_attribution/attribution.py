@@ -21,7 +21,7 @@ from dataclasses import dataclass
 import torch
 from torch import Tensor
 
-from qk_attribution.circuits import attention_scale
+from qk_attribution.circuits import UnsupportedArchitecture, attention_block, attention_scale
 from qk_attribution.features import SourceSet
 from qk_attribution.scores import to_head_space
 
@@ -51,12 +51,12 @@ class QKAttribution:
         Several key-side sources sit at the same position, and this is what compares against the
         row of the true score matrix.
         """
-        totals = torch.zeros(
-            n_pos, dtype=self.contributions.dtype, device=self.contributions.device
-        )
+        # Summed in float32 whatever the contributions are stored as: many terms of both signs
+        # land on the same position, and a low-precision accumulator loses most of the result.
+        totals = torch.zeros(n_pos, dtype=torch.float32, device=self.contributions.device)
         if len(self.key_sources):
-            totals.index_add_(0, self.key_sources.positions, self.by_key_source)
-        return totals
+            totals.index_add_(0, self.key_sources.positions, self.by_key_source.float())
+        return totals.to(self.contributions.dtype)
 
     def top_pairs(self, count: int) -> tuple[Tensor, Tensor]:
         """Return the ``count`` largest contributions by magnitude and their flat indices.
@@ -102,6 +102,7 @@ def qk_attribution(
         A :class:`QKAttribution` whose contributions sum to the score contributed by the sources
         supplied. That equals the full score only when the sources reconstruct the residual.
     """
+    _require_no_attention_bias(model, layer)
     if len(query_sources):
         elsewhere = query_sources.positions != query_position
         if bool(elsewhere.any()):
@@ -140,13 +141,32 @@ def qk_attribution(
     )
 
 
+def _require_no_attention_bias(model: object, layer: int) -> None:
+    """Refuse models whose query or key projection has a bias.
+
+    A bias adds a fixed vector to the projected query and key, so the score gains terms that pair
+    it with every source and with itself. Those terms belong to no source and the decomposition
+    would quietly omit them, even with a source set that reconstructs the residual exactly.
+    Qwen3 has no attention bias, so this is inert there.
+    """
+    attn = attention_block(model, layer)
+    for name in ("b_Q", "b_K"):
+        bias = getattr(attn, name, None)
+        if bias is not None and bool(bias.any()):
+            raise UnsupportedArchitecture(
+                f"{name} is non-zero at layer {layer}; the decomposition does not carry the "
+                "bias terms, so its parts would not sum to the score"
+            )
+
+
 def residual_remainder(residual: Tensor, sources: SourceSet) -> Tensor:
     """Return the part of the residual stream the sources do not account for.
 
     Args:
-        residual: The attention input, shaped ``(seq, d_model)``, from ``scores.attention_input``
-            divided by nothing: this works in pre-layernorm coordinates, so pass the residual the
-            sources were built against.
+        residual: ``blocks.{layer}.hook_resid_pre``, shaped ``(seq, d_model)``. This works in
+            pre-layernorm coordinates, because that is where a feature's decoder direction lands.
+            Passing ``scores.attention_input`` instead would apply ``ln1`` twice, and the shapes
+            match, so nothing would complain.
         sources: The sources whose directions are subtracted.
 
     Returns:
