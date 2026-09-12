@@ -117,3 +117,51 @@ def reference_scores(model: SimpleNamespace, layer: int, head: int, residual: Te
         q = attn.apply_rotary(q[None, :, None, :])[0, :, 0]
         k = attn.apply_rotary(k[None, :, None, :])[0, :, 0]
     return q @ k.transpose(-1, -2) / float(cfg.attn_scale)
+
+
+class StubTranscoders:
+    """A per-layer transcoder set exposing only the decoder rows the library reads."""
+
+    def __init__(self, n_layers: int, d_model: int, d_transcoder: int = 16, seed: int = 3) -> None:
+        gen = torch.Generator().manual_seed(seed)
+        self._layers = [
+            SimpleNamespace(W_dec=torch.randn(d_transcoder, d_model, generator=gen))
+            for _ in range(n_layers)
+        ]
+
+    def __len__(self) -> int:
+        return len(self._layers)
+
+    def __getitem__(self, layer: int) -> SimpleNamespace:
+        return self._layers[layer]
+
+
+class StubGraph:
+    """A circuit-tracer Graph stand-in carrying only the fields the library reads."""
+
+    def __init__(
+        self,
+        active_features: Tensor,
+        selected_features: Tensor,
+        activation_values: Tensor,
+        input_tokens: Tensor,
+    ) -> None:
+        self.active_features = active_features
+        self.selected_features = selected_features
+        self.activation_values = activation_values
+        self.input_tokens = input_tokens
+
+    @classmethod
+    def with_features(
+        cls,
+        triples: list[tuple[int, int, int]],
+        activations: list[float],
+        n_pos: int = 4,
+    ) -> StubGraph:
+        """Build a graph whose selected features are exactly ``triples``."""
+        return cls(
+            active_features=torch.tensor(triples, dtype=torch.int64).reshape(-1, 3),
+            selected_features=torch.arange(len(triples)),
+            activation_values=torch.tensor(activations),
+            input_tokens=torch.zeros(n_pos, dtype=torch.int64),
+        )
