@@ -9,54 +9,30 @@ measuring different things. Second, how concentrated are the resulting head load
 from __future__ import annotations
 
 import json
-import os
 
 import torch
-from circuit_tracer.graph import Graph
-from circuit_tracer.utils.hf_utils import load_transcoder_from_hub
-from transformer_lens import HookedTransformer
+from common import load, parser
 
 from qk_attribution.loadings import edge_effect, edge_loadings
 
-MODEL = "Qwen/Qwen3-0.6B"
-GRAPH = "spike_out/graph.pt"
-SEED = 0
-# Both encoders and decoders are needed, and at float32 the pair does not fit on a 24 GB card when
-# many layers are touched. The default run reads them in bfloat16; a short float32 run over fewer
-# edges checks that the residual disagreement with the graph is rounding and not a modelling gap.
-N_EDGES = int(os.environ.get("QK_N_EDGES", "40"))
-DTYPE = torch.float32 if os.environ.get("QK_DTYPE") == "float32" else torch.bfloat16
-# The saved graph records the dtype its own run used. Matching it matters: attention patterns and
-# layernorm scales computed in bfloat16 differ from float32 ones by more than the arithmetic here.
-MODEL_DTYPE = torch.bfloat16 if os.environ.get("QK_MODEL_DTYPE") == "bfloat16" else torch.float32
-
-torch.manual_seed(SEED)
-torch.set_grad_enabled(False)
-
-graph = Graph.from_pt(GRAPH)
-assert isinstance(graph.scan, str), "a multi-scan graph names several transcoder sets"
-# Loaded lazily so only the layers actually touched are materialised. Rows are cast to float32 for
-# the arithmetic regardless of how they were stored.
-transcoders, _ = load_transcoder_from_hub(
-    graph.scan,
-    device=torch.device("cuda"),
-    dtype=DTYPE,
-    lazy_encoder=True,
-    lazy_decoder=True,
+extra = parser(__doc__.splitlines()[0])
+extra.add_argument("--edges", type=int, default=40)
+args = extra.parse_args()
+fixtures = load(args)
+graph, transcoders, model, cache = (
+    fixtures.graph,
+    fixtures.transcoders,
+    fixtures.model,
+    fixtures.cache,
 )
-model = HookedTransformer.from_pretrained_no_processing(MODEL, device="cuda", dtype=MODEL_DTYPE)
-tokens = graph.input_tokens.unsqueeze(0).cuda()
-_, cache = model.run_with_cache(tokens)
+N_EDGES = args.edges
+MODEL_DTYPE = fixtures.model_dtype
 
 active = graph.active_features[graph.selected_features].cuda()
 acts = graph.activation_values.cuda().float()
 adjacency = graph.adjacency_matrix.cuda().float()
 n_features = len(graph.selected_features)
-print(
-    f"model={MODEL} seed={SEED} transcoder_dtype={DTYPE} model_dtype={MODEL_DTYPE} "
-    f"edges={N_EDGES} graph_dtype={graph.cfg.dtype} features={n_features} "
-    f"adjacency={tuple(adjacency.shape)}"
-)
+print(f"edges={N_EDGES} features={n_features} adjacency={tuple(adjacency.shape)}")
 
 # Pick the strongest feature-to-feature edges that both span a layer and cross a position. A
 # same-position edge travels down the residual stream and needs no head at all, so it says nothing
@@ -168,19 +144,7 @@ shares = torch.tensor(
 )
 print(f"busiest layer holds {shares.median():.3f} of all head magnitude (median)")
 
-name = f"measure_edge_loadings_{str(DTYPE).split('.')[-1]}_{str(MODEL_DTYPE).split('.')[-1]}.json"
-with open(name, "w") as fh:
-    json.dump(
-        {
-            "model": MODEL,
-            "graph": GRAPH,
-            "scan": graph.scan,
-            "seed": SEED,
-            "transcoder_dtype": str(DTYPE),
-            "model_dtype": str(MODEL_DTYPE),
-            "n_edges": N_EDGES,
-            "rows": rows,
-        },
-        fh,
-    )
+with open(args.out, "w") as fh:
+    json.dump({**fixtures.config(), "n_edges": N_EDGES, "rows": rows}, fh)
+print("wrote", args.out)
 print("peak GPU MiB:", torch.cuda.max_memory_allocated() // 2**20)

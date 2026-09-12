@@ -12,9 +12,7 @@ from __future__ import annotations
 import json
 
 import torch
-from circuit_tracer.graph import Graph
-from circuit_tracer.utils.hf_utils import load_transcoder_from_hub
-from transformer_lens import HookedTransformer
+from common import load, parser, sampled_layers
 
 from qk_attribution.attribution import qk_attribution, residual_remainder
 from qk_attribution.circuits import effective_rank, kv_head_for
@@ -25,40 +23,27 @@ from qk_attribution.scores import (
     rotation_matrices,
 )
 
-MODEL = "Qwen/Qwen3-0.6B"
-GRAPH = "spike_out/graph.pt"
-SEED = 0
-LAYERS = (7, 14, 20, 27)
 ENERGIES = (0.9, 0.99, 0.999)
 RANKS = (1, 2, 4, 8, 16, 32, 64)
 TOP_FRACTIONS = (0.001, 0.01, 0.1)
 
-torch.manual_seed(SEED)
-torch.set_grad_enabled(False)
-
-graph = Graph.from_pt(GRAPH)
-assert isinstance(graph.scan, str), "a multi-scan graph names several transcoder sets"
-transcoders, _ = load_transcoder_from_hub(
-    graph.scan,
-    device=torch.device("cuda"),
-    dtype=torch.float32,
-    lazy_encoder=True,
-    lazy_decoder=False,
+args = parser(__doc__.splitlines()[0]).parse_args()
+fixtures = load(args)
+graph, transcoders, model, cache = (
+    fixtures.graph,
+    fixtures.transcoders,
+    fixtures.model,
+    fixtures.cache,
 )
-model = HookedTransformer.from_pretrained_no_processing(MODEL, device="cuda", dtype=torch.float32)
-tokens = graph.input_tokens.unsqueeze(0).cuda()
-seq = tokens.shape[1]
-_, cache = model.run_with_cache(tokens)
+seq = fixtures.seq
 query_position = seq - 1
 rotations = rotation_matrices(model, seq)
 d_head = model.cfg.d_head
-print(
-    f"model={MODEL} seq={seq} query_position={query_position} d_head={d_head} seed={SEED} "
-    f"scan={graph.scan}"
-)
+layers = sampled_layers(model)
+print(f"query_position={query_position} d_head={d_head} layers={layers}")
 
 rows = []
-for layer in LAYERS:
+for layer in layers:
     features = feature_sources(graph, transcoders, below_layer=layer)
     resid_pre = cache[f"blocks.{layer}.hook_resid_pre"][0]
     sources = features.concat(remainder_sources(residual_remainder(resid_pre, features)))
@@ -136,14 +121,10 @@ for fraction in TOP_FRACTIONS:
     )
 print("blocks measured:", len(rows), "| example shape", rows[0]["shape"] if rows else None)
 
-with open("measure_feature_rank.json", "w") as fh:
+with open(args.out, "w") as fh:
     json.dump(
         {
-            "model": MODEL,
-            "graph": GRAPH,
-            "scan": graph.scan,
-            "seed": SEED,
-            "seq": seq,
+            **fixtures.config(),
             "query_position": query_position,
             "d_head": d_head,
             "energies": list(ENERGIES),
@@ -152,4 +133,5 @@ with open("measure_feature_rank.json", "w") as fh:
         },
         fh,
     )
+print("wrote", args.out)
 print("peak GPU MiB:", torch.cuda.max_memory_allocated() // 2**20)

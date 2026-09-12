@@ -12,9 +12,7 @@ from __future__ import annotations
 import json
 
 import torch
-from circuit_tracer.graph import Graph
-from circuit_tracer.utils.hf_utils import load_transcoder_from_hub
-from transformer_lens import HookedTransformer
+from common import load, parser, sampled_heads
 
 from qk_attribution.attribution import qk_attribution, residual_remainder
 from qk_attribution.circuits import kv_head_for
@@ -27,33 +25,22 @@ from qk_attribution.scores import (
     rotation_matrices,
 )
 
-MODEL = "Qwen/Qwen3-0.6B"
-GRAPH = "spike_out/graph.pt"
-SEED = 0
-HEADS = [(7, 3), (14, 5), (20, 3), (27, 9)]
-
-torch.manual_seed(SEED)
-torch.set_grad_enabled(False)
-
-graph = Graph.from_pt(GRAPH)
-assert isinstance(graph.scan, str), "a multi-scan graph names several transcoder sets"
-transcoders, _ = load_transcoder_from_hub(
-    graph.scan,
-    device=torch.device("cuda"),
-    dtype=torch.float32,
-    lazy_encoder=True,
-    lazy_decoder=False,
+args = parser(__doc__.splitlines()[0]).parse_args()
+fixtures = load(args)
+graph, transcoders, model, cache = (
+    fixtures.graph,
+    fixtures.transcoders,
+    fixtures.model,
+    fixtures.cache,
 )
-model = HookedTransformer.from_pretrained_no_processing(MODEL, device="cuda", dtype=torch.float32)
-tokens = graph.input_tokens.unsqueeze(0).cuda()
-seq = tokens.shape[1]
-_, cache = model.run_with_cache(tokens)
+seq = fixtures.seq
 query_position = seq - 1
 rotations = rotation_matrices(model, seq)
-print(f"model={MODEL} graph={GRAPH} seq={seq} query_position={query_position} seed={SEED}")
+heads = sampled_heads(model)
+print(f"query_position={query_position} heads={heads}")
 
 rows = []
-for layer, head in HEADS:
+for layer, head in heads:
     residual = attention_input(model, cache, layer)
     scales = qk_norm_scales(model, cache, layer)
     assert scales is not None
@@ -136,16 +123,7 @@ for layer, head in HEADS:
         f"| split_error={row['block_split_error']:.2e} | {shares}"
     )
 
-with open("measure_completeness.json", "w") as fh:
-    json.dump(
-        {
-            "model": MODEL,
-            "graph": GRAPH,
-            "seed": SEED,
-            "seq": seq,
-            "query_position": query_position,
-            "rows": rows,
-        },
-        fh,
-    )
+with open(args.out, "w") as fh:
+    json.dump({**fixtures.config(), "query_position": query_position, "rows": rows}, fh)
+print("wrote", args.out)
 print("peak GPU MiB:", torch.cuda.max_memory_allocated() // 2**20)
