@@ -29,10 +29,16 @@ circuit-tracer computes by an entirely different route, with no normalisation co
 layer's heads is exact to 2.5e-07.
 
 **QK attribution** decomposes an attention score into query-side by key-side feature terms. The
-decomposition is exact, and on the example in `experiments/008` the key-side features it surfaces
-are the right ones: a head attending from the final token of `The capital of the state containing
-Dallas is` puts its largest terms on a capitals feature at `' capital'` and a states feature at
-`' state'`. The caveat is that feature terms account for only 8% to 21% of the score.
+decomposition is exact, and its numbers predict interventions exactly: delete a feature from the
+residual stream and the score moves by the attributed amount, correlation 1.000000 across 76 heads
+on two models. The features it names fire on the token they point at in 79.4% of 412 head cases
+against a 10.2% control. Ablating the top two onward moves attention two to nine times further than
+removing the same number of features from the same positions.
+
+Two caveats sit on top of that. Feature terms account for 8% to 21% of the score with the low-L0
+transcoders published for Qwen3-0.6B, rising to 63% with the higher-L0 set for Qwen3-4B. And the
+exactness holds only while the normalisation scales are frozen, as attribution graphs freeze them:
+let RMSNorm respond and the same prediction correlates at 0.17 to 0.54 instead of 1.0.
 
 ## The form that actually holds
 
@@ -60,6 +66,10 @@ refused rather than approximated.
 | Is there low-rank structure to exploit? | About a factor of two, not an order of magnitude | `experiments/004`, `006` |
 | Do head loadings match upstream? | Yes, median ratio 1.0064 | `experiments/007` |
 | Does the output read as anything? | Key side yes, query side not with low-L0 transcoders | `experiments/008` |
+| Does it hold on other models? | Yes; feature share reaches 63% on 4B high-L0 transcoders | `experiments/009` |
+| Do explanations point at the right token? | 79.4% of 412 head cases, against a 10.2% control | `experiments/010` |
+| Do the numbers predict interventions? | Exactly: 76/76 heads, correlation 1.000000 | `experiments/011` |
+| Is one feature the cause? | No. The top two onward are, in 12/12 heads | `experiments/012` |
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
