@@ -81,27 +81,44 @@ for layer in range(cfg.n_layers):
                 (approx[causal] - masked[causal]).norm() / masked[causal].norm()
             ).item()
 
-        rows.append({
-            "layer": layer, "head": head,
-            "score_rank": {f"r{e}": effective_rank(score_values, energy=e) for e in ENERGIES},
-            "query_rank": {f"r{e}": effective_rank(q_values, energy=e) for e in ENERGIES},
-            "key_rank": {f"r{e}": effective_rank(k_values, energy=e) for e in ENERGIES},
-            "truncated": truncated,
-        })
+        rows.append(
+            {
+                "layer": layer,
+                "head": head,
+                "score_rank": {f"r{e}": effective_rank(score_values, energy=e) for e in ENERGIES},
+                "query_rank": {f"r{e}": effective_rank(q_values, energy=e) for e in ENERGIES},
+                "key_rank": {f"r{e}": effective_rank(k_values, energy=e) for e in ENERGIES},
+                "truncated": truncated,
+            }
+        )
     del residual
 
 for name in ("score_rank", "query_rank", "key_rank"):
     for energy in ENERGIES:
         values = torch.tensor([float(r[name][f"r{energy}"]) for r in rows])
-        print(f"{name:11s} at {energy:<6}: median={values.median():.0f} min={values.min():.0f} "
-              f"max={values.max():.0f}")
+        print(
+            f"{name:11s} at {energy:<6}: median={values.median():.0f} min={values.min():.0f} "
+            f"max={values.max():.0f}"
+        )
 
 for rank in RANKS:
     values = torch.tensor([r["truncated"][rank] for r in rows])
-    print(f"score matrix truncated to rank {rank:3d}: relative error median={values.median():.4f} "
-          f"p90={values.quantile(0.9):.4f} max={values.max():.4f}")
+    print(
+        f"score matrix truncated to rank {rank:3d}: relative error median={values.median():.4f} "
+        f"p90={values.quantile(0.9):.4f} max={values.max():.4f}"
+    )
 
 with open("measure_rank2.json", "w") as fh:
-    json.dump({"model": MODEL, "seed": SEED, "seq": seq, "text": TEXT,
-               "energies": list(ENERGIES), "ranks": list(RANKS), "rows": rows}, fh)
+    json.dump(
+        {
+            "model": MODEL,
+            "seed": SEED,
+            "seq": seq,
+            "text": TEXT,
+            "energies": list(ENERGIES),
+            "ranks": list(RANKS),
+            "rows": rows,
+        },
+        fh,
+    )
 print("peak GPU MiB:", torch.cuda.max_memory_allocated() // 2**20)

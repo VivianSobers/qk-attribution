@@ -19,7 +19,7 @@ import json
 import torch
 from transformer_lens import HookedTransformer
 
-from qk_attribution.circuits import effective_rank, kv_head_for, n_heads
+from qk_attribution.circuits import effective_rank, kv_head_for
 from qk_attribution.scores import (
     attention_input,
     attention_scores,
@@ -42,8 +42,10 @@ torch.set_grad_enabled(False)
 model = HookedTransformer.from_pretrained_no_processing(MODEL, device="cuda", dtype=torch.float32)
 cfg = model.cfg
 d_head = cfg.d_head
-print(f"model={MODEL} d_model={cfg.d_model} d_head={d_head} n_layers={cfg.n_layers} "
-      f"n_heads={cfg.n_heads} seed={SEED}")
+print(
+    f"model={MODEL} d_model={cfg.d_model} d_head={d_head} n_layers={cfg.n_layers} "
+    f"n_heads={cfg.n_heads} seed={SEED}"
+)
 
 spectra = []
 for layer in range(cfg.n_layers):
@@ -58,8 +60,10 @@ for layer in range(cfg.n_layers):
 for side in ("q", "k"):
     for energy in ENERGIES:
         ranks = torch.tensor([float(r[side][f"r{energy}"]) for r in spectra])
-        print(f"{side} effective rank at {energy:<6}: median={ranks.median():.0f} "
-              f"min={ranks.min():.0f} max={ranks.max():.0f} (of {d_head})")
+        print(
+            f"{side} effective rank at {energy:<6}: median={ranks.median():.0f} "
+            f"min={ranks.min():.0f} max={ranks.max():.0f} (of {d_head})"
+        )
 
 # Data-dependent truncation: does a rank-r projection still reproduce the scores?
 tokens = model.to_tokens(PROMPT)
@@ -69,9 +73,11 @@ sample = [(0, 0), (0, 7), (13, 3), (13, 12), (27, 1), (27, 15)]
 rotations = rotation_matrices(model, seq)
 causal = torch.tril(torch.ones(seq, seq, dtype=torch.bool, device="cuda"))
 
+
 def truncate(matrix: torch.Tensor, rank: int) -> torch.Tensor:
     u, s, vh = torch.linalg.svd(matrix, full_matrices=False)
     return (u[:, :rank] * s[:rank]) @ vh[:rank]
+
 
 truncation = []
 for layer, head in sample:
@@ -81,8 +87,9 @@ for layer, head in sample:
     scale_q = scales[0][:, head]
     scale_k = scales[1][:, kv_head_for(model, head)]
     truth = cache[f"blocks.{layer}.attn.hook_attn_scores"][0, head]
-    exact = attention_scores(model, layer, head, residual, query_scale=scale_q,
-                             key_scale=scale_k, rotations=rotations)
+    exact = attention_scores(
+        model, layer, head, residual, query_scale=scale_q, key_scale=scale_k, rotations=rotations
+    )
     base = ((exact[causal] - truth[causal]).norm() / truth[causal].norm()).item()
     left = query_projection(model, layer, head)
     right = key_projection(model, layer, head)
@@ -105,8 +112,10 @@ try:
     selected = graph.selected_features
     n_pos = len(graph.input_tokens)
     active = graph.active_features[selected] if hasattr(graph, "active_features") else None
-    print(f"graph: {len(selected)} selected features over {n_pos} positions, "
-          f"{len(selected) / n_pos:.1f} per position on average")
+    print(
+        f"graph: {len(selected)} selected features over {n_pos} positions, "
+        f"{len(selected) / n_pos:.1f} per position on average"
+    )
     if active is not None:
         positions = active[:, 2] if active.ndim == 2 and active.shape[1] >= 3 else None
         if positions is not None:
@@ -117,8 +126,18 @@ except Exception as exc:  # noqa: BLE001
     print("graph load failed:", type(exc).__name__, str(exc)[:200])
 
 with open("measure_rank.json", "w") as fh:
-    json.dump({"model": MODEL, "seed": SEED, "d_head": d_head, "energies": list(ENERGIES),
-               "ranks": list(RANKS), "spectra": spectra, "truncation": truncation,
-               "features_per_position": counts}, fh)
+    json.dump(
+        {
+            "model": MODEL,
+            "seed": SEED,
+            "d_head": d_head,
+            "energies": list(ENERGIES),
+            "ranks": list(RANKS),
+            "spectra": spectra,
+            "truncation": truncation,
+            "features_per_position": counts,
+        },
+        fh,
+    )
 print("peak GPU MiB:", torch.cuda.max_memory_allocated() // 2**20)
 print("wrote measure_rank.json")

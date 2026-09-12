@@ -36,19 +36,28 @@ group = n_heads // n_kv
 
 tokens = model.to_tokens(PROMPT)
 seq = tokens.shape[1]
-print(f"model={MODEL} seq={seq} n_layers={cfg.n_layers} n_heads={n_heads} n_kv={n_kv} "
-      f"d_head={d_head} attn_scale={scale:.6f} seed={SEED}")
-
-names = ("ln1.hook_normalized", "attn.hook_q", "attn.hook_k", "attn.hook_rot_q",
-         "attn.hook_rot_k", "attn.hook_attn_scores", "attn.q_norm.hook_scale",
-         "attn.k_norm.hook_scale")
-_, cache = model.run_with_cache(
-    tokens, names_filter=lambda n: any(n.endswith(s) for s in names)
+print(
+    f"model={MODEL} seq={seq} n_layers={cfg.n_layers} n_heads={n_heads} n_kv={n_kv} "
+    f"d_head={d_head} attn_scale={scale:.6f} seed={SEED}"
 )
 
-# Rotation matrices by position, taken from the model's own apply_rotary so nothing is reimplemented.
+names = (
+    "ln1.hook_normalized",
+    "attn.hook_q",
+    "attn.hook_k",
+    "attn.hook_rot_q",
+    "attn.hook_rot_k",
+    "attn.hook_attn_scores",
+    "attn.q_norm.hook_scale",
+    "attn.k_norm.hook_scale",
+)
+_, cache = model.run_with_cache(tokens, names_filter=lambda n: any(n.endswith(s) for s in names))
+
+# Rotation matrices by position, from the model's own apply_rotary so nothing is reimplemented.
 attn0 = model.blocks[0].attn
-basis = torch.eye(d_head, device="cuda").reshape(d_head, 1, 1, d_head).expand(d_head, seq, 1, d_head)
+basis = (
+    torch.eye(d_head, device="cuda").reshape(d_head, 1, 1, d_head).expand(d_head, seq, 1, d_head)
+)
 rot_basis = attn0.apply_rotary(basis.contiguous(), 0, None)  # [d_head, pos, 1, d_head]
 R = rot_basis.squeeze(2).permute(1, 0, 2).contiguous()  # R[p] : v @ R[p] == apply_rotary(v, p)
 
@@ -67,6 +76,7 @@ print(f"rope_relative_max_deviation={rel_dev:.3e}")
 
 causal = torch.tril(torch.ones(seq, seq, dtype=torch.bool, device="cuda"))
 
+
 def stats(got: torch.Tensor, want: torch.Tensor) -> dict[str, float]:
     g, w = got[causal], want[causal]
     return {
@@ -75,6 +85,7 @@ def stats(got: torch.Tensor, want: torch.Tensor) -> dict[str, float]:
         "corr": torch.corrcoef(torch.stack([g, w]))[0, 1].item(),
         "true_std": w.std().item(),
     }
+
 
 rows = []
 bias_norm = 0.0
@@ -86,14 +97,14 @@ for layer in range(cfg.n_layers):
     ln1 = model.blocks[layer].ln1
     assert not hasattr(ln1, "b"), "RMSNorm expected; a LayerNorm bias would need a term here"
     x = cache[f"blocks.{layer}.ln1.hook_normalized"][0] * ln1.w
-    q_raw = cache[f"blocks.{layer}.attn.hook_q"][0]                  # [seq, n_heads, d_head]
-    k_raw = cache[f"blocks.{layer}.attn.hook_k"][0]                  # [seq, n_kv, d_head]
+    q_raw = cache[f"blocks.{layer}.attn.hook_q"][0]  # [seq, n_heads, d_head]
+    k_raw = cache[f"blocks.{layer}.attn.hook_k"][0]  # [seq, n_kv, d_head]
     # QK-norm scales come back flattened over (batch, pos, head); restore the head axis.
     s_q = cache[f"blocks.{layer}.attn.q_norm.hook_scale"].reshape(seq, n_heads, 1)
     s_k = cache[f"blocks.{layer}.attn.k_norm.hook_scale"].reshape(seq, n_kv, 1)
     rot_q = cache[f"blocks.{layer}.attn.hook_rot_q"][0]
     rot_k = cache[f"blocks.{layer}.attn.hook_rot_k"][0]
-    true = cache[f"blocks.{layer}.attn.hook_attn_scores"][0]         # [n_heads, seq, seq]
+    true = cache[f"blocks.{layer}.attn.hook_attn_scores"][0]  # [n_heads, seq, seq]
 
     # hook_k carries only kv heads, and W_K is the GQA-expanded view of _W_K.
     assert torch.equal(attn.W_K[0], attn._W_K[0])
@@ -121,34 +132,43 @@ for layer in range(cfg.n_layers):
         from_hooks = rot_q[:, head] @ rot_k[:, kvh].transpose(-1, -2) / scale
 
         # (4) the derived form, built from the residual stream and weights only
-        wq_eff = attn.W_Q[head] * w_q                # d_model x d_head, gain folded in
+        wq_eff = attn.W_Q[head] * w_q  # d_model x d_head, gain folded in
         wk_eff = attn.W_K[head] * w_k
-        left = x @ wq_eff                            # [seq, d_head]
+        left = x @ wq_eff  # [seq, d_head]
         right = x @ wk_eff
         rq = torch.einsum("pa,pab->pb", left, R[:seq])
         rk = torch.einsum("jc,jcb->jb", right, R[:seq])
         derived = (rq @ rk.transpose(-1, -2)) / (scale * s_q[:, head] * s_k[:, kvh].transpose(0, 1))
 
-        rows.append({
-            "layer": layer, "head": head,
-            "plain": stats(plain, want),
-            "no_rope": stats(no_rope, want),
-            "from_hooks": stats(from_hooks, want),
-            "derived": stats(derived, want),
-        })
+        rows.append(
+            {
+                "layer": layer,
+                "head": head,
+                "plain": stats(plain, want),
+                "no_rope": stats(no_rope, want),
+                "from_hooks": stats(from_hooks, want),
+                "derived": stats(derived, want),
+            }
+        )
     del x, q_raw, k_raw, rot_q, rot_k, true
 
 print(f"max_abs_attn_bias={bias_norm:.3e}  (zero means the bilinear form needs no bias term)")
+
 
 def summarise(key: str) -> None:
     rel = torch.tensor([r[key]["rel_fro"] for r in rows])
     mx = torch.tensor([r[key]["max_abs"] for r in rows])
     cr = torch.tensor([r[key]["corr"] for r in rows])
-    print(f"{key:12s} rel_fro median={rel.median():.4g} mean={rel.mean():.4g} "
-          f"min={rel.min():.4g} max={rel.max():.4g} | max_abs max={mx.max():.4g} "
-          f"| corr median={cr.median():.4f} min={cr.min():.4f}")
+    print(
+        f"{key:12s} rel_fro median={rel.median():.4g} mean={rel.mean():.4g} "
+        f"min={rel.min():.4g} max={rel.max():.4g} | max_abs max={mx.max():.4g} "
+        f"| corr median={cr.median():.4f} min={cr.min():.4f}"
+    )
 
-print(f"--- {len(rows)} (layer, head) pairs, errors against hook_attn_scores on the causal mask ---")
+
+print(
+    f"--- {len(rows)} (layer, head) pairs, errors against hook_attn_scores on the causal mask ---"
+)
 for key in ("plain", "no_rope", "from_hooks", "derived"):
     summarise(key)
 
@@ -159,8 +179,18 @@ worst = max(rows, key=lambda r: r["derived"]["rel_fro"])
 print("worst derived:", worst["layer"], worst["head"], worst["derived"])
 
 with open("measure_qk.json", "w") as fh:
-    json.dump({"model": MODEL, "prompt": PROMPT, "seed": SEED, "seq": seq,
-               "attn_scale": scale, "rope_relative_max_deviation": rel_dev,
-               "max_abs_attn_bias": bias_norm, "rows": rows}, fh)
+    json.dump(
+        {
+            "model": MODEL,
+            "prompt": PROMPT,
+            "seed": SEED,
+            "seq": seq,
+            "attn_scale": scale,
+            "rope_relative_max_deviation": rel_dev,
+            "max_abs_attn_bias": bias_norm,
+            "rows": rows,
+        },
+        fh,
+    )
 print("peak GPU MiB:", torch.cuda.max_memory_allocated() // 2**20)
 print("wrote measure_qk.json")
