@@ -101,15 +101,17 @@ for layer in LAYERS:
             for fraction in TOP_FRACTIONS
         }
 
-        rows.append({
-            "layer": layer,
-            "head": head,
-            "shape": list(block.shape),
-            "max_possible_rank": min(min(block.shape), d_head),
-            "effective_rank": {f"r{e}": effective_rank(values, energy=e) for e in ENERGIES},
-            "truncation": truncation,
-            "concentration": concentration,
-        })
+        rows.append(
+            {
+                "layer": layer,
+                "head": head,
+                "shape": list(block.shape),
+                "max_possible_rank": min(min(block.shape), d_head),
+                "effective_rank": {f"r{e}": effective_rank(values, energy=e) for e in ENERGIES},
+                "truncation": truncation,
+                "concentration": concentration,
+            }
+        )
 
 for energy in ENERGIES:
     ranks = torch.tensor([float(r["effective_rank"][f"r{energy}"]) for r in rows])
