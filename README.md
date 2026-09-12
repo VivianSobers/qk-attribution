@@ -5,44 +5,84 @@ interactions between query-side and key-side features.
 
 ## The problem
 
-Attribution graphs, as implemented in [circuit-tracer](https://github.com/safety-research/circuit-tracer),
-freeze attention patterns and treat them as constants. The graph therefore shows where information
-flows through attention via the OV pathway, but says nothing about why the model attended to those
-positions in the first place. The QK pathway is invisible.
+Attribution graphs, as implemented in
+[circuit-tracer](https://github.com/decoderesearch/circuit-tracer), freeze attention patterns and
+treat them as constants. A graph therefore shows where information flows through attention via the
+OV pathway, but says nothing about why the model attended to those positions. The QK pathway is
+invisible.
 
 Anthropic described a method that closes this gap in
 [Tracing Attention Computation Through Feature Interactions](https://transformer-circuits.pub/2025/attention-qk/index.html),
-calling QK attributions "a significant qualitative improvement on the original attribution graphs,
-unlocking analyses that were previously impossible."
+calling QK attributions "a significant qualitative improvement on the original attribution graphs".
+[Issue #53](https://github.com/decoderesearch/circuit-tracer/issues/53) requested it upstream and it
+remains unimplemented there.
 
-It is not available in the open-source tool.
-[Issue #53](https://github.com/safety-research/circuit-tracer/issues/53) requested it in
-November 2025 and it remains unimplemented.
+## What this does
 
-## What this repository does
+Two things, with different maturity.
 
-Implements QK attributions and head loadings on top of existing pre-trained transcoders, with the
-aim of contributing the result upstream.
+**Head loadings** split an existing graph edge across the attention heads that carried it. This is
+finished and independent of architecture. Propagating a source feature's decoder direction forward
+through frozen attention and reading it with the target's encoder reproduces the adjacency entries
+circuit-tracer computes by an entirely different route, with no normalisation constant between them
+(median ratio 1.0064 over 40 edges; exactly 1.0000 when dtypes match). Splitting that across one
+layer's heads is exact to 2.5e-07.
 
-Attention scores are bilinear in the residual streams at the query and key positions, so inserting
-sparse decompositions at both ends expands the score into feature-pair interactions:
+**QK attribution** decomposes an attention score into query-side by key-side feature terms. The
+decomposition is exact, and on the example in `experiments/008` the key-side features it surfaces
+are the right ones: a head attending from the final token of `The capital of the state containing
+Dallas is` puts its largest terms on a capitals feature at `' capital'` and a states feature at
+`' state'`. The caveat is that feature terms account for only 8% to 21% of the score.
 
-    C_ij^h(q,k) = [a_i(q) * a_j(k) / sqrt(d_h)] * v_i^T W_QK^h v_j
+## The form that actually holds
 
-and each head's contribution to an existing graph edge s -> t can be isolated as:
+`W_Q @ W_K.T` is not the score operator for a modern model. On Qwen3-0.6B its median relative error
+against the model's own scores is 1.175, worse than predicting zero, because rotary embeddings and
+QK-normalisation both intervene. What does hold is
 
-    L_h(s->t) = a_s * a_t * (v_t^T W_OV^h v_s) * A^h(p_t, p_s)
+    s(p, j) = x_p @ [W_Q diag(w_q) R(p) R(j).T diag(w_k) W_K.T] @ x_j
+              / (attn_scale * sigma_q[p] * sigma_k[j])
 
-The cost is quadratic in context length times feature count, so making this tractable is as much of
-the work as computing it correctly. Anthropic note that many QK attribution matrices are
-approximately low-rank, which is the avenue this repository explores.
+The QK-norm gains fold into the projections, the rotary operator depends on the position offset
+rather than being one matrix, and the RMS scales are per-position scalars frozen the way
+circuit-tracer already freezes layernorm scales. This reproduces the model to 2.5e-07 median across
+all 448 (layer, head) pairs. Gemma-2's attention-score soft-capping does not reduce this way and is
+refused rather than approximated.
 
-## Status
+## What has been measured
 
-Early. Environment and infrastructure verified, implementation not yet started.
+| Question | Answer | Where |
+|---|---|---|
+| Is the plain QK form usable? | No. Median error 1.175; correlation under 0.5 for 395 of 448 heads | `experiments/003` |
+| Does the corrected form hold? | Yes, to 2.5e-07 median | `experiments/003` |
+| Is the decomposition exhaustive? | Yes, to 3e-07 with the remainder carried | `experiments/005` |
+| How much do features explain? | 8% to 21% of the score norm | `experiments/005` |
+| Is there low-rank structure to exploit? | About a factor of two, not an order of magnitude | `experiments/004`, `006` |
+| Do head loadings match upstream? | Yes, median ratio 1.0064 | `experiments/007` |
+| Does the output read as anything? | Key side yes, query side not with low-L0 transcoders | `experiments/008` |
 
-See [docs/method.md](docs/method.md) for the derivation, [docs/setup.md](docs/setup.md) for the
-environment, and [experiments/](experiments/) for measured results.
+Every number here came from a run whose script, config and raw output are in `experiments/`.
+
+## Modules
+
+| Module | Responsibility |
+|---|---|
+| `circuits` | Per-head QK and OV weight products, architecture detection, effective rank |
+| `scores` | Exact score reconstruction; rotary operators; frozen QK-norm scales |
+| `features` | Reading source directions out of a circuit-tracer graph |
+| `attribution` | The feature-pair contraction and its remainder accounting |
+| `propagate` | Forward propagation through frozen attention |
+| `loadings` | Splitting an edge across one layer's heads |
+| `labels` | Feature descriptions, fetched by byte range from the transcoder repository |
+| `nodes` | Adjacency index arithmetic |
+
+## Scope
+
+Decomposition runs for one query position and one head at a time. Over all position pairs the
+contraction reaches 1.5 PFLOP per head at 512 tokens and the intermediate does not fit in memory;
+the arithmetic is in `experiments/004`. Attributing the part of the residual that transcoder
+features do not cover, which is most of it, would mean tracing back through earlier attention and is
+not implemented.
 
 ## Installation
 
@@ -60,6 +100,9 @@ Upstream circuit-tracer requires all of these to pass before a PR:
     ruff check
     ruff format --check
     pyright
+
+Tests that need a GPU and downloaded weights are marked `gpu` and `slow` and are deselected by
+default. Run them with `pytest -m "gpu and slow"`.
 
 ## Licence
 
