@@ -1,0 +1,46 @@
+[project]
+name = "qk-attribution"
+version = "0.1.0"
+description = "QK attribution and head loadings for attribution graphs"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "circuit-tracer>=0.5.0",
+    "torch>=2.4",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+    "pyright>=1.1.380",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+# Matches the upstream circuit-tracer contribution requirements so that
+# anything sent there passes their checks unchanged.
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+
+[tool.pyright]
+include = ["src", "tests"]
+pythonVersion = "3.10"
+typeCheckingMode = "standard"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+markers = [
+    "gpu: requires a CUDA device",
+    "slow: downloads weights or runs full attribution",
+]
