@@ -102,13 +102,15 @@ class FeatureStore:
     @property
     def index(self) -> dict[str, Any]:
         """The per-layer offset index, downloaded once."""
-        if self._index is None:
+        index = self._index
+        if index is None:
             from huggingface_hub import hf_hub_download
 
             path = hf_hub_download(self.scan, INDEX_FILE)
             with gzip.open(path, "rt") as handle:
-                self._index = json.load(handle)
-        return self._index
+                index = json.load(handle)
+            self._index = index
+        return index
 
     def byte_range(self, layer: int, index: int) -> tuple[str, int, int]:
         """Return the file name and half-open byte range holding one feature's chunk."""
