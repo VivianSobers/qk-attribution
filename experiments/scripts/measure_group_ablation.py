@@ -103,10 +103,16 @@ for layer in sampled_layers(model, count=3):
             continue
 
         result = qk_attribution(
-            model, layer, head, query_position,
-            query_sources=at_query, key_sources=sources,
-            rotations=rotations, norm_scale=norm_scale,
-            query_scale=scales[0][:, head], key_scale=scales[1][:, kv_head_for(model, head)],
+            model,
+            layer,
+            head,
+            query_position,
+            query_sources=at_query,
+            key_sources=sources,
+            rotations=rotations,
+            norm_scale=norm_scale,
+            query_scale=scales[0][:, head],
+            key_scale=scales[1][:, kv_head_for(model, head)],
         )
         by_key = result.contributions.sum(dim=0)[key_feature]
         order = by_key.abs().argsort(descending=True)
@@ -148,8 +154,10 @@ for layer in sampled_layers(model, count=3):
         print(f"L{layer:2d}H{head:2d} ({len(ranked)} features) {shown}")
 
 print("\nmovement in total variation distance, median over heads:")
-print(f"  {'k':>5s} {'top-k':>8s} {'same-position':>14s} {'random':>8s} "
-      f"{'vs position':>12s} {'wins':>7s}")
+print(
+    f"  {'k':>5s} {'top-k':>8s} {'same-position':>14s} {'random':>8s} "
+    f"{'vs position':>12s} {'wins':>7s}"
+)
 for k in args.ks:
     present = [r["curve"][k] for r in rows if k in r["curve"]]
     if not present:

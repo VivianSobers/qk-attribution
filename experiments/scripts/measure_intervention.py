@@ -74,9 +74,7 @@ def _remove(name: str, position: int, direction):
     return (name, hook)
 
 
-def scores_with_direction_removed(
-    layer: int, head: int, position: int, direction, *, freeze: bool
-):
+def scores_with_direction_removed(layer: int, head: int, position: int, direction, *, freeze: bool):
     """Run the model with a direction deleted from one position of one layer's input.
 
     With ``freeze`` the normalisation scales are held at their clean values, which is the regime
@@ -138,10 +136,16 @@ for layer in sampled_layers(model, count=4):
         scale_q = scales[0][:, head]
         scale_k = scales[1][:, kv_head_for(model, head)]
         result = qk_attribution(
-            model, layer, head, query_position,
-            query_sources=at_query, key_sources=sources,
-            rotations=rotations, norm_scale=norm_scale,
-            query_scale=scale_q, key_scale=scale_k,
+            model,
+            layer,
+            head,
+            query_position,
+            query_sources=at_query,
+            key_sources=sources,
+            rotations=rotations,
+            norm_scale=norm_scale,
+            query_scale=scale_q,
+            key_scale=scale_k,
         )
         query_block = result.contributions
         block = result.contributions[~at_query.is_remainder][:, key_feature]
@@ -169,12 +173,15 @@ for layer in sampled_layers(model, count=4):
             )
 
         baseline_scores = attention_scores(
-            model, layer, head, residual,
-            query_scale=scale_q, key_scale=scale_k, rotations=rotations,
+            model,
+            layer,
+            head,
+            residual,
+            query_scale=scale_q,
+            key_scale=scale_k,
+            rotations=rotations,
         )[query_position]
-        frozen = scores_with_direction_removed(
-            layer, head, position, direction, freeze=True
-        )
+        frozen = scores_with_direction_removed(layer, head, position, direction, freeze=True)
         free = scores_with_direction_removed(layer, head, position, direction, freeze=False)
         actual = float(frozen[query_position, position] - baseline_scores[position])
         actual_free = float(free[query_position, position] - baseline_scores[position])
@@ -191,8 +198,7 @@ for layer in sampled_layers(model, count=4):
                 int(sources.layers[control]), layer, head, position, sources.directions[control]
             )
             control_drop = float(
-                control_pattern[query_position, position]
-                - patterns[head, query_position, position]
+                control_pattern[query_position, position] - patterns[head, query_position, position]
             )
 
         realistic = scores_with_feature_ablated(
@@ -202,19 +208,21 @@ for layer in sampled_layers(model, count=4):
             realistic[query_position, position] - patterns[head, query_position, position]
         )
 
-        rows.append({
-            "layer": layer,
-            "head": head,
-            "key_position": position,
-            "key_token": tokens[position],
-            "feature": f"L{int(sources.layers[source])}#{int(sources.feature_ids[source])}",
-            "predicted_score_change": predicted,
-            "actual_score_change": actual,
-            "actual_score_change_unfrozen": actual_free,
-            "baseline_attention": float(patterns[head, query_position, position]),
-            "attention_change": pattern_drop,
-            "control_attention_change": control_drop,
-        })
+        rows.append(
+            {
+                "layer": layer,
+                "head": head,
+                "key_position": position,
+                "key_token": tokens[position],
+                "feature": f"L{int(sources.layers[source])}#{int(sources.feature_ids[source])}",
+                "predicted_score_change": predicted,
+                "actual_score_change": actual,
+                "actual_score_change_unfrozen": actual_free,
+                "baseline_attention": float(patterns[head, query_position, position]),
+                "attention_change": pattern_drop,
+                "control_attention_change": control_drop,
+            }
+        )
         print(
             f"L{layer:2d}H{head:2d} pos {position} {tokens[position]!r:14s} "
             f"predicted {predicted:+8.4f} frozen {actual:+8.4f} free {actual_free:+8.4f} "
@@ -236,24 +244,38 @@ if rows:
     # Relative error explodes wherever the true change is near zero, so the share of heads within
     # a tolerance says more about agreement than the worst case does.
     within = int((error < 1e-4).sum())
-    print(f"predicted vs actual score change: median relative error {error.median():.3e}; "
-          f"{within}/{len(rows)} heads agree to better than 1e-04")
-    print(f"largest absolute disagreement: "
-          f"{(predicted - actual).abs().max():.3e} on changes of size "
-          f"{actual.abs().median():.3f} (median)")
-    print(f"correlation with frozen scales: "
-          f"{torch.corrcoef(torch.stack([predicted, actual]))[0, 1]:.6f}")
-    print(f"predicted vs actual with scales free: median relative error "
-          f"{free_error.median():.3e}, correlation "
-          f"{torch.corrcoef(torch.stack([predicted, unfrozen]))[0, 1]:.6f}")
-    print(f"attention change when the named feature is ablated: median {drops.median():+.4f}, "
-          f"mean {drops.mean():+.4f}")
+    print(
+        f"predicted vs actual score change: median relative error {error.median():.3e}; "
+        f"{within}/{len(rows)} heads agree to better than 1e-04"
+    )
+    print(
+        f"largest absolute disagreement: "
+        f"{(predicted - actual).abs().max():.3e} on changes of size "
+        f"{actual.abs().median():.3f} (median)"
+    )
+    print(
+        f"correlation with frozen scales: "
+        f"{torch.corrcoef(torch.stack([predicted, actual]))[0, 1]:.6f}"
+    )
+    print(
+        f"predicted vs actual with scales free: median relative error "
+        f"{free_error.median():.3e}, correlation "
+        f"{torch.corrcoef(torch.stack([predicted, unfrozen]))[0, 1]:.6f}"
+    )
+    print(
+        f"attention change when the named feature is ablated: median {drops.median():+.4f}, "
+        f"mean {drops.mean():+.4f}"
+    )
     if controls.numel():
-        print(f"attention change for a control feature at the same position: "
-              f"median {controls.median():+.4f}, mean {controls.mean():+.4f}")
+        print(
+            f"attention change for a control feature at the same position: "
+            f"median {controls.median():+.4f}, mean {controls.mean():+.4f}"
+        )
         bigger = int((drops[: controls.numel()].abs() > controls.abs()).sum())
-        print(f"named feature moved attention more than the control in "
-              f"{bigger}/{controls.numel()} heads")
+        print(
+            f"named feature moved attention more than the control in "
+            f"{bigger}/{controls.numel()} heads"
+        )
 
 with open(args.out, "w") as fh:
     json.dump({**fixtures.config(), "tokens": tokens, "rows": rows}, fh, indent=1)

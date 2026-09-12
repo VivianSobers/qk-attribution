@@ -29,8 +29,12 @@ from qk_attribution.scores import (
 )
 
 extra = parser(__doc__.splitlines()[0])
-extra.add_argument("--content-threshold", type=float, default=0.2,
-                   help="minimum attention mass off the sink and off the query itself")
+extra.add_argument(
+    "--content-threshold",
+    type=float,
+    default=0.2,
+    help="minimum attention mass off the sink and off the query itself",
+)
 extra.add_argument("--top-tokens", type=int, default=8)
 args = extra.parse_args()
 
@@ -82,10 +86,16 @@ for layer in sampled_layers(model, count=6):
             continue
 
         result = qk_attribution(
-            model, layer, head, query_position,
-            query_sources=at_query, key_sources=sources,
-            rotations=rotations, norm_scale=norm_scale,
-            query_scale=scales[0][:, head], key_scale=scales[1][:, kv_head_for(model, head)],
+            model,
+            layer,
+            head,
+            query_position,
+            query_sources=at_query,
+            key_sources=sources,
+            rotations=rotations,
+            norm_scale=norm_scale,
+            query_scale=scales[0][:, head],
+            key_scale=scales[1][:, kv_head_for(model, head)],
         )
         key_feature = ~sources.is_remainder
         block = result.contributions[~at_query.is_remainder][:, key_feature]
@@ -105,35 +115,43 @@ for layer in sampled_layers(model, count=6):
 
         others = [p for p in range(query_position + 1) if p != position]
         control_position = rng.choice(others) if others else position
-        rows.append({
-            "layer": layer,
-            "head": head,
-            "content_mass": content,
-            "key_position": position,
-            "key_token": tokens[position],
-            "feature": f"L{feature_layer}#{feature_id}",
-            "feature_tokens": [t for t, _ in card.top_tokens[: args.top_tokens]],
-            "is_dead": card.is_dead,
-            "match": fires_on(card, tokens[position]),
-            "control_position": control_position,
-            "control_match": fires_on(card, tokens[control_position]),
-            "attention_to_key": float(patterns[head, query_position, position]),
-        })
+        rows.append(
+            {
+                "layer": layer,
+                "head": head,
+                "content_mass": content,
+                "key_position": position,
+                "key_token": tokens[position],
+                "feature": f"L{feature_layer}#{feature_id}",
+                "feature_tokens": [t for t, _ in card.top_tokens[: args.top_tokens]],
+                "is_dead": card.is_dead,
+                "match": fires_on(card, tokens[position]),
+                "control_position": control_position,
+                "control_match": fires_on(card, tokens[control_position]),
+                "attention_to_key": float(patterns[head, query_position, position]),
+            }
+        )
 
 live = [r for r in rows if not r["is_dead"]]
 matches = sum(r["match"] for r in live)
 controls = sum(r["control_match"] for r in live)
 print(f"\nheads examined: {len(rows)} ({len(live)} with a live top feature)")
 if live:
-    print(f"top key feature fires on the token it points to: {matches}/{len(live)} "
-          f"= {matches / len(live):.1%}")
-    print(f"same test against a random other position:       {controls}/{len(live)} "
-          f"= {controls / len(live):.1%}")
+    print(
+        f"top key feature fires on the token it points to: {matches}/{len(live)} "
+        f"= {matches / len(live):.1%}"
+    )
+    print(
+        f"same test against a random other position:       {controls}/{len(live)} "
+        f"= {controls / len(live):.1%}"
+    )
     hit = [r for r in live if r["match"]]
     print("\nexamples that matched:")
     for r in hit[:8]:
-        print(f"  L{r['layer']}H{r['head']} -> pos {r['key_position']} {r['key_token']!r} "
-              f"{r['feature']} fires on {r['feature_tokens'][:4]}")
+        print(
+            f"  L{r['layer']}H{r['head']} -> pos {r['key_position']} {r['key_token']!r} "
+            f"{r['feature']} fires on {r['feature_tokens'][:4]}"
+        )
 
 with open(args.out, "w") as fh:
     json.dump(
