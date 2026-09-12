@@ -28,6 +28,9 @@ where = ["src"]
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+# Recent ruff formats Python blocks inside Markdown. Plans and notes quote illustrative code that
+# should read the way it was written, so they are excluded.
+extend-exclude = ["docs"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "SIM"]
