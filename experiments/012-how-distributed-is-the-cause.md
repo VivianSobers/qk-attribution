@@ -4,9 +4,8 @@ Date: 2026-09-13
 Machines: worker-1 and worker-2, RTX 4090 each
 Script: `experiments/scripts/measure_group_ablation.py`
 Raw output: `experiments/results/012-group-ablation-{0.6b,1.7b}.json`
-Config: seed 0, the prompt `The capital of the state containing Dallas is`, query position 8,
-Qwen3-0.6B and Qwen3-1.7B in float32, 12 qualifying heads each, features ablated where they are
-written with the whole model free to respond.
+Config: seed 0, four prompts, Qwen3-0.6B and Qwen3-1.7B in float32, query position last, features
+ablated where they are written with the whole model free to respond. 78 head-curves over eight runs.
 
 ## Question
 
@@ -25,7 +24,24 @@ head was not attending to, so it would look impressive for the wrong reason. The
 draws k features from the same positions as the top k, matching the positional profile exactly. Both
 are reported; the position-matched one is the one to read.
 
-## Result
+## Result, pooled over all eight runs
+
+| k | top k | same-position control | random control | ratio | heads where top k moved more |
+|---|---|---|---|---|---|
+| 1 | 0.0310 | 0.0029 | 0.0002 | 10.6 | 72/78 |
+| 2 | 0.0459 | 0.0095 | 0.0007 | 4.9 | 69/78 |
+| 5 | 0.0678 | 0.0159 | 0.0021 | 4.3 | 74/78 |
+| 10 | 0.0905 | 0.0325 | 0.0068 | 2.8 | 74/78 |
+| 25 | 0.1598 | 0.0451 | 0.0186 | 3.5 | 72/78 |
+| 50 | 0.1834 | 0.0890 | 0.0346 | 2.1 | 71/78 |
+| 100 | 0.2603 | 0.0928 | 0.0454 | 2.8 | 71/78 |
+| 250 | 0.3011 | 0.1388 | 0.0971 | 2.2 | 69/78 |
+
+The ranking beats a position-matched control at every k, in roughly 90% of head-curves, by a factor
+between two and ten. With eight runs pooled the effect is already clear at k = 1, which the
+twelve-head samples below were too small to establish.
+
+## The original per-model runs, for reference
 
 Median movement over heads, Qwen3-0.6B:
 
@@ -56,14 +72,16 @@ Qwen3-1.7B:
 ## What this says
 
 The ranking carries real information about the attention pattern. Removing the features the
-attribution ranks highest moves attention two to five times further than removing the same number of
-features from the same positions, and from k = 2 onward it does so in almost every head on both
-models. The ratio declines as k grows, which it must: at k equal to the total the two sets coincide.
+attribution ranks highest moves attention two to ten times further than removing the same number of
+features from the same positions, in about 90% of cases at every k. The ratio declines as k grows,
+which it must: at k equal to the total the two sets coincide.
 
-So experiment 011's negative was about the first feature specifically, not about the ranking. At
-k = 1 the effect is there but noisy, winning in 9 of 12 heads on 0.6B. By k = 2 it is 12 of 12. The
-cause of a head's attention is distributed over a handful of features rather than resting on one,
-and the attribution orders them usefully.
+This does not contradict experiment 011, and the difference between them is worth stating. That
+experiment asked whether removing the top feature changes attention to the one position the feature
+names, against a competitor at that same position, and found 61%. This one asks whether removing
+the top-ranked features changes the head's whole attention distribution, against the same number
+drawn from the same positions, and finds about 90%. The ranking is informative about how a head
+distributes attention. It is much weaker as a claim about one particular attention edge.
 
 The absolute movements stay modest. Removing the top 250 features, which is a quarter of everything
 available at layer 7, moves the attention row by about 0.27 in total variation. Attention here is

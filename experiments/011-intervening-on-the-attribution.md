@@ -4,8 +4,8 @@ Date: 2026-09-13
 Machines: worker-1 and worker-2, RTX 4090 each
 Script: `experiments/scripts/measure_intervention.py`
 Raw output: `experiments/results/011-intervention-{0.6b,1.7b}.json`
-Config: seed 0, the prompt `The capital of the state containing Dallas is`, query position 8,
-Qwen3-0.6B and Qwen3-1.7B in float32, 36 and 40 qualifying heads.
+Config: seed 0, four prompts, Qwen3-0.6B and Qwen3-1.7B in float32, query position last, 263
+qualifying heads across eight runs.
 
 ## Question
 
@@ -29,12 +29,20 @@ wrong produces predictions that are 4 to 6 times too large, which is how both er
 
 ## The prediction is exact
 
-| Model | Heads agreeing to better than 1e-04 | Median relative error | Correlation |
-|---|---|---|---|
-| 0.6B | 36/36 | 9.6e-07 | 1.000000 |
-| 1.7B | 40/40 | 4.6e-07 | 1.000000 |
+| Model | Prompt | Heads agreeing to better than 1e-04 |
+|---|---|---|
+| 0.6B | capital / Dallas | 36/36 |
+| 0.6B | Eiffel Tower | 31/31 |
+| 0.6B | Michael Jordan | 24/24 |
+| 0.6B | Japanese currency | 29/29 |
+| 1.7B | capital / Dallas | 40/40 |
+| 1.7B | Eiffel Tower | 34/34 |
+| 1.7B | Michael Jordan | 35/35 |
+| 1.7B | Japanese currency | 34/34 |
+| **All** | | **263/263** |
 
-Largest absolute disagreement is 3.7e-06 on score changes whose median size is 0.85. The
+Correlation between predicted and actual is 1.000000 on every run, median relative error under
+1e-06, largest absolute disagreement 3.7e-06 on score changes whose median size is 0.85. The
 attribution is not an approximation of the intervention; under the stated assumptions it is the
 intervention.
 
@@ -44,13 +52,12 @@ The result above holds the normalisation scales at their clean values, which is 
 decomposition assumes and what circuit-tracer already does for layernorm. Repeating the identical
 intervention while letting the scales recompute:
 
-| Model | Median relative error | Correlation |
-|---|---|---|
-| 0.6B | 1.24 | 0.175 |
-| 1.7B | 0.39 | 0.536 |
+Correlation between the prediction and the unfrozen outcome, by run: -0.08, +0.03, +0.18, +0.86 on
+0.6B, and +0.54, +0.79, +0.86, +0.93 on 1.7B. Median relative error ranges from 0.39 to 1.38.
 
 So the same deletion, measured on the same model, produces a score change the attribution predicts
-perfectly or barely at all, depending only on whether RMSNorm is allowed to respond. Removing a
+perfectly or barely at all, depending only on whether RMSNorm is allowed to respond. How much is
+lost is prompt-dependent and not predictable from the frozen numbers. Removing a
 feature changes the norm of the residual at that position, which rescales everything else there.
 
 This is a caveat on the frozen-scale methodology rather than on this implementation. Any attribution
@@ -64,8 +71,8 @@ that feature where it is actually written, and letting the whole model respond, 
 probability by a median of -0.0010 on 0.6B and -0.0013 on 1.7B. Ablating a different feature at the
 same position with a comparable activation moves it by +0.0001 and +0.0007.
 
-The named feature moved attention more than the control in 21 of 36 heads on 0.6B and 18 of 40 on
-1.7B. That is a coin flip.
+Pooled over all eight runs the named feature moved attention to that position more than the control
+in 160 of 263 heads, or 61%. Better than chance, but not by much.
 
 This is a clean negative and it matters for how the method should be read. Being the largest single
 term in an exact decomposition does not make a feature the cause of the attention pattern. The terms
@@ -76,13 +83,18 @@ off a graph is reading the largest term, not the load-bearing one.
 It also sits consistently with experiment 006: the top 1% of pairs hold under a third of the
 magnitude, so no individual pair should be expected to dominate.
 
-## What would strengthen this
+## This is narrower than it first appears
 
-Ablating the top k features together, rather than one, and finding the k at which the attention
-pattern does move. That would turn the negative into a measured statement about how distributed the
-cause is. It needs no new machinery, only a loop.
+The test above asks about attention to the one position the named feature points at. Experiment 012
+asks a broader question, whether removing the top-ranked features moves the head's whole attention
+distribution more than removing the same number from the same positions, and there the answer is
+yes in 72 of 78 cases even at k = 1.
+
+Both are true. The top feature reliably shifts how a head distributes its attention, and does not
+reliably shift attention to the specific position it names more than a same-position competitor
+would. Ranking first by contribution is informative; reading the top pair as the cause of one
+particular attention edge is not supported.
 
 ## Next
 
-- Group ablation, as above
-- Repeat on the other prompts from experiment 010
+- Find the k at which movement saturates, which would bound how many features an explanation needs
