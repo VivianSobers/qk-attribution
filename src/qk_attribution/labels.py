@@ -135,7 +135,11 @@ class FeatureStore:
         else:
             data = self._download(layer, index)
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(json.dumps(data))
+            # Written via a temporary file: an interrupted write would otherwise leave truncated
+            # JSON that every later read fails on, with nothing to invalidate it.
+            temporary = path.with_suffix(".partial")
+            temporary.write_text(json.dumps(data))
+            temporary.replace(path)
         card = card_from_chunk(data, layer, index)
         self._cards[key] = card
         return card
@@ -152,4 +156,12 @@ class FeatureStore:
             headers["Authorization"] = f"Bearer {token}"
         response = requests.get(url, headers=headers, timeout=120)
         response.raise_for_status()
+        if response.status_code != 206:
+            # A server that ignores the Range header returns the whole file with status 200, and
+            # every feature in the layer would then decode to the first one's card and be cached
+            # under its own name.
+            raise RuntimeError(
+                f"expected a partial response for {filename} bytes {start}-{end - 1}, "
+                f"got status {response.status_code} with {len(response.content)} bytes"
+            )
         return parse_chunk(response.content)

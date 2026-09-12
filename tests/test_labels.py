@@ -140,3 +140,34 @@ def test_cards_are_memoised(tmp_path: Path):
     first = store.card(1, 1)
     path.unlink()
     assert store.card(1, 1) is first
+
+
+def test_a_full_response_to_a_range_request_is_refused(tmp_path: Path, monkeypatch):
+    """A server ignoring Range returns the whole file; every feature would decode to the first."""
+    store = FeatureStore("someone/set", cache_dir=tmp_path)
+    store._index = {"0": {"filename": "layer_0.bin", "offsets": [0, 100, 250]}}
+
+    class Response:
+        status_code = 200
+        content = make_chunk(EXAMPLE)
+
+        def raise_for_status(self):
+            return None
+
+    import requests
+
+    monkeypatch.setattr(requests, "get", lambda *a, **k: Response())
+    monkeypatch.setattr("huggingface_hub.get_token", lambda: None)
+    monkeypatch.setattr("huggingface_hub.hf_hub_url", lambda *a, **k: "https://example/x")
+    with pytest.raises(RuntimeError, match="expected a partial response"):
+        store.card(0, 1)
+
+
+def test_an_interrupted_cache_write_leaves_no_file(tmp_path: Path):
+    """The cache is written through a temporary file, so a crash cannot leave truncated JSON."""
+    store = FeatureStore("someone/set", cache_dir=tmp_path)
+    path = tmp_path / "someone_set" / "0_0.json"
+    path.parent.mkdir(parents=True)
+    (path.parent / "0_0.partial").write_text("{truncated")
+    path.write_text(json.dumps(EXAMPLE))
+    assert store.card(0, 0).top_logits == [" Paris", " France", " Lyon"]
