@@ -30,10 +30,15 @@ layer's heads is exact to 2.5e-07.
 
 **QK attribution** decomposes an attention score into query-side by key-side feature terms. The
 decomposition is exact, and its numbers predict interventions exactly: delete a feature from the
-residual stream and the score moves by the attributed amount, correlation 1.000000 across 76 heads
-on two models. The features it names fire on the token they point at in 79.4% of 412 head cases
-against a 10.2% control. Ablating the top two onward moves attention two to nine times further than
-removing the same number of features from the same positions.
+residual stream and the score moves by the attributed amount, correlation 1.000000 across all 263
+heads tested on two models and four prompts. The features it names fire on the token they point at
+in 79.4% of 412 head cases against a 10.2% control. Ablating the top-ranked features moves the
+attention distribution two to ten times further than removing the same number from the same
+positions, in about 90% of cases.
+
+Read the ranking rather than the single top pair: removing the top feature shifts how a head
+distributes attention, but it changes attention to the one position it names more than a
+same-position competitor only 61% of the time.
 
 Two caveats sit on top of that. Feature terms account for 8% to 21% of the score with the low-L0
 transcoders published for Qwen3-0.6B, rising to 63% with the higher-L0 set for Qwen3-4B. And the
@@ -68,8 +73,9 @@ refused rather than approximated.
 | Does the output read as anything? | Key side yes, query side not with low-L0 transcoders | `experiments/008` |
 | Does it hold on other models? | Yes; feature share reaches 63% on 4B high-L0 transcoders | `experiments/009` |
 | Do explanations point at the right token? | 79.4% of 412 head cases, against a 10.2% control | `experiments/010` |
-| Do the numbers predict interventions? | Exactly: 76/76 heads, correlation 1.000000 | `experiments/011` |
-| Is one feature the cause? | No. The top two onward are, in 12/12 heads | `experiments/012` |
+| Do the numbers predict interventions? | Exactly: 263/263 heads, correlation 1.000000 | `experiments/011` |
+| Is one feature the cause of one edge? | Only 61% of the time; the ranking is the useful part | `experiments/011` |
+| Does the ranking predict the pattern? | Yes: 2 to 10 times a matched control, in ~90% of cases | `experiments/012` |
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
