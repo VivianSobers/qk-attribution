@@ -134,3 +134,42 @@ def test_concat_joins_both_sets_in_order():
     assert len(combined) == 5
     assert combined.is_remainder.tolist() == [False, True, True, True, True]
     torch.testing.assert_close(combined.directions[0], features.directions[0])
+
+
+def test_activations_are_realigned_when_selection_prunes():
+    """activation_values is aligned with active_features, not with selected_features.
+
+    A graph where the two coincide hides this. One where selection prunes does not, and getting it
+    wrong attaches one feature's activation to another's direction.
+    """
+    graph = StubGraph.with_features(
+        [(0, 0, 1), (1, 0, 2), (2, 0, 3)], activations=[10.0, 20.0, 30.0]
+    )
+    graph.selected_features = torch.tensor([0, 2])
+    sources = feature_sources(graph, transcoders(), below_layer=5)
+    assert sources.activations.tolist() == [10.0, 30.0]
+
+
+def test_activations_are_used_directly_when_already_selected():
+    graph = StubGraph.with_features([(0, 0, 1), (1, 0, 2)], activations=[10.0, 20.0])
+    graph.selected_features = torch.tensor([1])
+    graph.activation_values = torch.tensor([20.0])
+    sources = feature_sources(graph, transcoders(), below_layer=5)
+    assert sources.activations.tolist() == [20.0]
+
+
+def test_mismatched_activation_length_is_rejected():
+    graph = StubGraph.with_features([(0, 0, 1), (1, 0, 2)], activations=[1.0, 2.0])
+    graph.activation_values = torch.tensor([1.0, 2.0, 3.0, 4.0])
+    with pytest.raises(ValueError, match="matching neither"):
+        feature_sources(graph, transcoders(), below_layer=5)
+
+
+def test_pruned_selection_scales_directions_by_the_right_activation():
+    graph = StubGraph.with_features(
+        [(0, 0, 1), (1, 0, 2), (2, 0, 3)], activations=[10.0, 20.0, 30.0]
+    )
+    graph.selected_features = torch.tensor([2])
+    set_ = transcoders()
+    sources = feature_sources(graph, set_, below_layer=5)
+    torch.testing.assert_close(sources.directions[0], set_[2].W_dec[3] * 30.0)

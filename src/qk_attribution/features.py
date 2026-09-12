@@ -68,6 +68,31 @@ class SourceSet:
         )
 
 
+def activations_for(graph: Any, selected: Any = None) -> Tensor:
+    """Return the activation of every selected feature, in the order ``selected_features`` gives.
+
+    ``activation_values`` is aligned with ``active_features``, not with ``selected_features``, and
+    the two coincide only when nothing was pruned. On a graph where they differ, indexing the wrong
+    one silently attaches one feature's activation to another feature's direction, which scales
+    every downstream contribution by an arbitrary factor. The lengths are checked rather than
+    assumed.
+    """
+    if selected is None:
+        selected = graph.selected_features
+    values = graph.activation_values
+    if len(values) == len(graph.active_features):
+        return values[selected]
+    if len(values) == len(selected):
+        return values
+    raise ValueError(
+        f"activation_values has {len(values)} entries, matching neither "
+        f"active_features ({len(graph.active_features)}) nor selected_features ({len(selected)})"
+    )
+
+
+_activations_for = activations_for
+
+
 def feature_sources(
     graph: Any, transcoders: Any, *, below_layer: int, device: torch.device | None = None
 ) -> SourceSet:
@@ -91,11 +116,12 @@ def feature_sources(
         raise ValueError(
             f"active_features must be (n, 3) of (layer, pos, feature), got {tuple(active.shape)}"
         )
+    values = _activations_for(graph, selected)
     keep = active[:, LAYER] < below_layer
     layers = active[keep, LAYER]
     positions = active[keep, POSITION]
     feature_ids = active[keep, FEATURE]
-    activations = graph.activation_values[keep]
+    activations = values[keep]
 
     template = transcoders[0].W_dec
     device = device if device is not None else template.device

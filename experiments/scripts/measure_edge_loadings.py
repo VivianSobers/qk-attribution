@@ -13,6 +13,7 @@ import json
 import torch
 from common import load, parser
 
+from qk_attribution.features import activations_for
 from qk_attribution.loadings import edge_effect, edge_loadings
 
 extra = parser(__doc__.splitlines()[0])
@@ -29,7 +30,7 @@ N_EDGES = args.edges
 MODEL_DTYPE = fixtures.model_dtype
 
 active = graph.active_features[graph.selected_features].cuda()
-acts = graph.activation_values.cuda().float()
+acts = activations_for(graph).cuda().float()
 adjacency = graph.adjacency_matrix.cuda().float()
 n_features = len(graph.selected_features)
 print(f"edges={N_EDGES} features={n_features} adjacency={tuple(adjacency.shape)}")
