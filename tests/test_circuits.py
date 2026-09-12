@@ -224,3 +224,16 @@ def test_invalid_energy_is_rejected(energy: float):
 def test_empty_spectrum_is_rejected():
     with pytest.raises(ValueError, match="non-empty"):
         effective_rank(torch.tensor([]))
+
+
+@pytest.mark.parametrize("dtype", [torch.float16, torch.float32, torch.float64])
+def test_effective_rank_accepts_any_float_dtype(dtype: torch.dtype):
+    assert effective_rank(torch.tensor([10.0, 1e-3, 1e-4], dtype=dtype), energy=0.99) == 1
+
+
+@pytest.mark.gpu
+def test_effective_rank_accepts_cuda_tensors():
+    if not torch.cuda.is_available():
+        pytest.skip("no CUDA device")
+    spectrum = torch.tensor([4.0, 3.0, 2.0, 1.0], device="cuda")
+    assert effective_rank(spectrum, energy=0.9) == effective_rank(spectrum.cpu(), energy=0.9)

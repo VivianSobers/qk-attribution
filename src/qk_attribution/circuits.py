@@ -273,4 +273,5 @@ def effective_rank(singular_values: Tensor, energy: float = 0.99) -> int:
         raise ValueError("singular_values must be a non-empty 1D tensor")
     squared = singular_values.float() ** 2
     cumulative = torch.cumsum(squared, dim=0) / squared.sum()
-    return int(torch.searchsorted(cumulative, torch.tensor(energy)).item()) + 1
+    # Counting rather than searchsorted so the comparison stays on the input's own device.
+    return int((cumulative < energy).sum().item()) + 1
