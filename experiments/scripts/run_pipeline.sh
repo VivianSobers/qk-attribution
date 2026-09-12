@@ -1,16 +1,13 @@
 #!/usr/bin/env bash
-# Wait for an attribution graph to appear, then run every measurement against it.
-# Usage: run_pipeline.sh <graph path> <tag>
+# Run every measurement against one attribution graph, waiting for it to appear if needed.
+# Usage: run_pipeline.sh <graph path> <tag> [extra args passed to each script]
 set -u
-GRAPH="$1"
-TAG="$2"
+GRAPH="$1"; shift
+TAG="$1"; shift
 cd ~/qk-attribution || exit 1
-. .venv/bin/activate 2>/dev/null || true
-PY=$(command -v python)
-[ -x ./.venv/bin/python ] && PY=./.venv/bin/python
+PY=./.venv/bin/python
 mkdir -p results
 
-echo "[pipeline] waiting for $GRAPH"
 for _ in $(seq 1 720); do
   [ -s "$GRAPH" ] && break
   sleep 30
@@ -23,8 +20,10 @@ echo "[pipeline] graph present: $(ls -l "$GRAPH")"
 
 for script in measure_completeness measure_feature_rank measure_edge_loadings; do
   echo "[pipeline] === $script ==="
-  $PY "experiments/scripts/$script.py" --graph "$GRAPH" --out "results/${TAG}-${script}.json" \
-    2>&1 | grep -viE "^WARNING|it/s\]$"
-  echo "[pipeline] $script exit=$?"
+  $PY "experiments/scripts/$script.py" --graph "$GRAPH" \
+    --out "results/${TAG}-${script}.json" "$@" 2>&1 | grep -viE "^WARNING|it/s\]$"
 done
+echo "[pipeline] === explain_attention ==="
+$PY experiments/scripts/explain_attention.py --graph "$GRAPH" \
+  --out "results/${TAG}-explain.json" --pairs 6 "$@" 2>&1 | grep -viE "^WARNING|it/s\]$"
 echo "[pipeline] done"
