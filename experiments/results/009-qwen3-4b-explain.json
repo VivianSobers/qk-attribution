@@ -1,0 +1,142 @@
+{
+ "model": "Qwen/Qwen3-4B",
+ "graph": "spike_out/qwen3-4b-graph.pt",
+ "scan": "mwhanna/qwen3-4b-transcoders",
+ "seed": 0,
+ "seq": 9,
+ "model_dtype": "torch.bfloat16",
+ "transcoder_dtype": "torch.bfloat16",
+ "graph_dtype": "torch.bfloat16",
+ "n_features": 7500,
+ "layer": 27,
+ "head": 11,
+ "query_position": 8,
+ "tokens": [
+  "<|im_end|>",
+  "The",
+  " capital",
+  " of",
+  " the",
+  " state",
+  " containing",
+  " Dallas",
+  " is"
+ ],
+ "attends_to": [
+  {
+   "position": 0,
+   "token": "<|im_end|>",
+   "probability": 0.44921875
+  },
+  {
+   "position": 7,
+   "token": " Dallas",
+   "probability": 0.2890625
+  },
+  {
+   "position": 8,
+   "token": " is",
+   "probability": 0.16015625
+  },
+  {
+   "position": 6,
+   "token": " containing",
+   "probability": 0.0380859375
+  },
+  {
+   "position": 3,
+   "token": " of",
+   "probability": 0.03564453125
+  }
+ ],
+ "reconstruction_error": 0.04242248833179474,
+ "feature_share": 0.06803347170352936,
+ "pairs": [
+  {
+   "rank": 0,
+   "contribution": -0.14205335080623627,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#76851 fires on ' of', ' in', 's', ' OF' -> promotes '\u8845', 'PELL', ' impression', '\u00e1m'",
+   "key": "L14#96297 fires on '1', '2', 'This', 'An' -> promotes '\u6211\u4eec\u8981', '\u5074', '\u94bf', 'acades'"
+  },
+  {
+   "rank": 1,
+   "contribution": -0.11475493013858795,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#62770 fires on ' capital', ' Capital', 'Capital', 'capital' -> promotes ' g\u00fcven', 'hap', '\u00e4r', '\u731c'",
+   "key": "L15#24829 fires on ' the', ' and', ' ', '3' -> promotes ' cel', '.cent', ' antid', 'inese'"
+  },
+  {
+   "rank": 2,
+   "contribution": 0.09964048117399216,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#76851 fires on ' of', ' in', 's', ' OF' -> promotes '\u8845', 'PELL', ' impression', '\u00e1m'",
+   "key": "L18#15247 fires on '2', '1', 'An', 'In' -> promotes 'olg', ',:,', '\u043d\u0438\u0447', '\u00e9r\u00e9'"
+  },
+  {
+   "rank": 3,
+   "contribution": -0.0754021555185318,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#62770 fires on ' capital', ' Capital', 'Capital', 'capital' -> promotes ' g\u00fcven', 'hap', '\u00e4r', '\u731c'",
+   "key": "L14#96297 fires on '1', '2', 'This', 'An' -> promotes '\u6211\u4eec\u8981', '\u5074', '\u94bf', 'acades'"
+  },
+  {
+   "rank": 4,
+   "contribution": 0.07048855721950531,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#62770 fires on ' capital', ' Capital', 'Capital', 'capital' -> promotes ' g\u00fcven', 'hap', '\u00e4r', '\u731c'",
+   "key": "L18#148614 fires on ' at', ' the', ' a', '1' -> promotes ' Ug', 'iques', ' Eag', '\u2026\u23ce\u23ce\u23ce\u23ce'"
+  },
+  {
+   "rank": 5,
+   "contribution": 0.0703144520521164,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#140780 fires on 'VA', 'va', 'B', 've' -> promotes 'disk', '-goal', 'roma', '\u8ba9\u6d88\u8d39\u8005'",
+   "key": "L15#24829 fires on ' the', ' and', ' ', '3' -> promotes ' cel', '.cent', ' antid', 'inese'"
+  }
+ ],
+ "top_key_features": [
+  {
+   "contribution": 0.36326825618743896,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L12#39989 fires on '1', '2', 'This', ' the' -> promotes '\u6bbf\u4e0b', '\u53d7\u5f71\u54cd', '\u526f', 'ding'"
+  },
+  {
+   "contribution": 0.3409659266471863,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L18#148614 fires on ' at', ' the', ' a', '1' -> promotes ' Ug', 'iques', ' Eag', '\u2026\u23ce\u23ce\u23ce\u23ce'"
+  },
+  {
+   "contribution": 0.27493011951446533,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L12#79383 fires on '1', ' a', ' Decre', '2' -> promotes ' spokes', ' omega', ' applaud', ' intention'"
+  },
+  {
+   "contribution": -0.2731882631778717,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L13#56272 fires on '1', ' a', ' an', 'It' -> promotes '\u0440\u0443\u0448', '_ask', '\u904d', '\u628a\u8fd9\u4e2a'"
+  },
+  {
+   "contribution": 0.20798932015895844,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L12#73956 fires on '1', ' a', ' the', 'Our' -> promotes 'Reading', ' Publishing', '\u662f\u6307', ' Training'"
+  },
+  {
+   "contribution": -0.20486445724964142,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L15#24829 fires on ' the', ' and', ' ', '3' -> promotes ' cel', '.cent', ' antid', 'inese'"
+  }
+ ]
+}

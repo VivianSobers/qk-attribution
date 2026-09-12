@@ -1,0 +1,142 @@
+{
+ "model": "Qwen/Qwen3-1.7B",
+ "graph": "spike_out/qwen3-1.7b-graph.pt",
+ "scan": "mwhanna/qwen3-1.7b-transcoders-lowl0",
+ "seed": 0,
+ "seq": 9,
+ "model_dtype": "torch.float32",
+ "transcoder_dtype": "torch.bfloat16",
+ "graph_dtype": "torch.bfloat16",
+ "n_features": 7500,
+ "layer": 21,
+ "head": 2,
+ "query_position": 8,
+ "tokens": [
+  "<|im_end|>",
+  "The",
+  " capital",
+  " of",
+  " the",
+  " state",
+  " containing",
+  " Dallas",
+  " is"
+ ],
+ "attends_to": [
+  {
+   "position": 0,
+   "token": "<|im_end|>",
+   "probability": 0.567635178565979
+  },
+  {
+   "position": 1,
+   "token": "The",
+   "probability": 0.14359579980373383
+  },
+  {
+   "position": 7,
+   "token": " Dallas",
+   "probability": 0.13469062745571136
+  },
+  {
+   "position": 8,
+   "token": " is",
+   "probability": 0.05256958678364754
+  },
+  {
+   "position": 2,
+   "token": " capital",
+   "probability": 0.03849295154213905
+  }
+ ],
+ "reconstruction_error": 6.496310334114241e-07,
+ "feature_share": 0.1261175572872162,
+ "pairs": [
+  {
+   "rank": 0,
+   "contribution": 0.11729052662849426,
+   "key_position": 2,
+   "key_token": " capital",
+   "query": "L1#6456 (label unavailable: HTTPError)",
+   "key": "L20#80068 fires on ' Cap', 'Cap', ' cap', ' Capt' -> promotes 'stone', 'itol', 'italize', 'uture'"
+  },
+  {
+   "rank": 1,
+   "contribution": 0.07935981452465057,
+   "key_position": 2,
+   "key_token": " capital",
+   "query": "L1#39956 fires on ' Vel', ' Mount', ' UV', ' clim' -> promotes '\u0422\u0418', '\u7559\u4f4f', 'odate', '\u95ed\u73af'",
+   "key": "L20#80068 fires on ' Cap', 'Cap', ' cap', ' Capt' -> promotes 'stone', 'itol', 'italize', 'uture'"
+  },
+  {
+   "rank": 2,
+   "contribution": 0.06486465036869049,
+   "key_position": 8,
+   "key_token": " is",
+   "query": "L1#6456 (label unavailable: HTTPError)",
+   "key": "L19#112877 fires on ' be', ' like', ' $\\\\', ' =' -> promotes '____________', '________', ' ____', ' ______'"
+  },
+  {
+   "rank": 3,
+   "contribution": 0.05369856581091881,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#6456 (label unavailable: HTTPError)",
+   "key": "L11#129655 fires on ' the', '1', ' for', ' and' -> promotes '\u5320', 'gli', 'agen', 'ancode'"
+  },
+  {
+   "rank": 4,
+   "contribution": 0.05044679343700409,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L1#6456 (label unavailable: HTTPError)",
+   "key": "L19#111212 fires on ' The', ' the', 'The', ' of' -> promotes ' latter', 'oret', 'oretical', 'ses'"
+  },
+  {
+   "rank": 5,
+   "contribution": 0.04895555600523949,
+   "key_position": 2,
+   "key_token": " capital",
+   "query": "L1#162816 fires on ' state', ' State', ' store', '.S' -> promotes 'feat', 'timeofday', '@author', '\u260e'",
+   "key": "L20#80068 fires on ' Cap', 'Cap', ' cap', ' Capt' -> promotes 'stone', 'itol', 'italize', 'uture'"
+  }
+ ],
+ "top_key_features": [
+  {
+   "contribution": 0.2584795653820038,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L20#132191 fires on ' the', ' The', 'The', 'he' -> promotes 'oretical', ' entire', ' same', 'ses'"
+  },
+  {
+   "contribution": 0.24947397410869598,
+   "key_position": 7,
+   "key_token": " Dallas",
+   "key": "L19#52741 fires on ' Tex', ' Worth', ' Texas', 'ita' -> promotes '.getFont', 'ActionTypes', ' FontStyle', 'did'"
+  },
+  {
+   "contribution": 0.19142401218414307,
+   "key_position": 8,
+   "key_token": " is",
+   "key": "L19#112877 fires on ' be', ' like', ' $\\\\', ' =' -> promotes '____________', '________', ' ____', ' ______'"
+  },
+  {
+   "contribution": 0.1613294780254364,
+   "key_position": 1,
+   "key_token": "The",
+   "key": "L19#80682 fires on '.nz', 'WA', '1', ' Observer' -> promotes 'PLIC', '\u4ed8\u8d39', 'ulu', ' Hopkins'"
+  },
+  {
+   "contribution": 0.15751022100448608,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L19#111212 fires on ' The', ' the', 'The', ' of' -> promotes ' latter', 'oret', 'oretical', 'ses'"
+  },
+  {
+   "contribution": 0.15521101653575897,
+   "key_position": 7,
+   "key_token": " Dallas",
+   "key": "L20#10464 fires on ' City', ' Atlanta', 'city', ' Tokyo' -> promotes 'scape', ' mayor', '\u90ca\u533a', '\u665a\u62a5'"
+  }
+ ]
+}
