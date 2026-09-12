@@ -94,7 +94,12 @@ _activations_for = activations_for
 
 
 def feature_sources(
-    graph: Any, transcoders: Any, *, below_layer: int, device: torch.device | None = None
+    graph: Any,
+    transcoders: Any,
+    *,
+    below_layer: int,
+    device: torch.device | None = None,
+    dtype: torch.dtype = torch.float32,
 ) -> SourceSet:
     """Collect the activation-scaled decoder directions visible to attention at ``below_layer``.
 
@@ -104,6 +109,10 @@ def feature_sources(
         below_layer: Only features written at a strictly earlier layer are included, since a
             feature cannot influence attention in the layer that produces it or any before it.
         device: Where to build the result. Defaults to the decoder weights' device.
+        dtype: Precision of the extracted directions. Float32 by default even when the transcoders
+            are stored in bfloat16: the weights are large enough that their storage dtype matters,
+            but the extracted directions are not, and the contraction downstream sums millions of
+            terms that largely cancel. At bfloat16 that cancellation costs two decimal digits.
 
     Returns:
         A :class:`SourceSet`, empty but correctly shaped when nothing qualifies.
@@ -125,16 +134,16 @@ def feature_sources(
 
     template = transcoders[0].W_dec
     device = device if device is not None else template.device
-    directions = torch.empty(
-        (int(keep.sum()), template.shape[1]), dtype=template.dtype, device=device
-    )
+    directions = torch.empty((int(keep.sum()), template.shape[1]), dtype=dtype, device=device)
     # Gathered one layer at a time. Reading row by row instead costs a separate decoder access per
     # feature, and with lazily loaded transcoders each of those can re-read the layer from disk,
     # which turns a few seconds into many minutes on a graph with tens of thousands of features.
     for layer in layers.unique().tolist():
         rows = layers == layer
-        directions[rows] = transcoders[layer].W_dec[feature_ids[rows]].to(device)
-    directions = directions * activations.to(device=device, dtype=directions.dtype).unsqueeze(-1)
+        directions[rows] = (
+            transcoders[layer].W_dec[feature_ids[rows]].to(device=device, dtype=dtype)
+        )
+    directions = directions * activations.to(device=device, dtype=dtype).unsqueeze(-1)
 
     return SourceSet(
         directions=directions,

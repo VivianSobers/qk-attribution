@@ -204,3 +204,18 @@ def test_gathered_directions_match_their_features():
     torch.testing.assert_close(sources.directions[0], set_[1].W_dec[5] * 1.0)
     torch.testing.assert_close(sources.directions[1], set_[2].W_dec[7] * 2.0)
     torch.testing.assert_close(sources.directions[2], set_[1].W_dec[9] * 3.0)
+
+
+def test_directions_default_to_float32_whatever_the_transcoders_store():
+    """Storage precision is a memory decision; the contraction downstream needs the headroom."""
+    graph = StubGraph.with_features([(1, 0, 3)], activations=[2.0])
+    set_ = transcoders()
+    set_._layers[1].W_dec = set_._layers[1].W_dec.to(torch.bfloat16)
+    sources = feature_sources(graph, set_, below_layer=5)
+    assert sources.directions.dtype == torch.float32
+
+
+def test_direction_dtype_can_be_chosen():
+    graph = StubGraph.with_features([(1, 0, 3)], activations=[2.0])
+    sources = feature_sources(graph, transcoders(), below_layer=5, dtype=torch.bfloat16)
+    assert sources.directions.dtype == torch.bfloat16
