@@ -98,7 +98,7 @@ Half the movement the attributed features can produce comes from about 1.5% of t
 | `features` | Reading source directions out of a circuit-tracer graph |
 | `attribution` | The feature-pair contraction and its remainder accounting |
 | `propagate` | Forward propagation through frozen attention |
-| `loadings` | Splitting an edge across one layer's heads |
+| `loadings` | Splitting an edge across one layer's heads, or every layer on its path in one sweep |
 | `labels` | Feature descriptions, fetched by byte range from the transcoder repository |
 | `nodes` | Adjacency index arithmetic |
 
