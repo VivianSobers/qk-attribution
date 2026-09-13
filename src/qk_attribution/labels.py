@@ -18,10 +18,15 @@ import json
 import struct
 from dataclasses import dataclass, field
 from pathlib import Path
+from time import sleep
 from typing import Any
 
 INDEX_FILE = "features/index.json.gz"
 DEFAULT_CACHE = Path.home() / ".cache" / "qk-attribution" / "features"
+
+#: Statuses worth trying again. A rate limit clears on its own and a 5xx is usually the hub rather
+#: than the request; a 404 or a 403 will not become anything else.
+RETRYABLE_STATUS = frozenset({408, 425, 429, 500, 502, 503, 504})
 
 
 @dataclass(frozen=True)
@@ -93,9 +98,29 @@ def card_from_chunk(data: dict[str, Any], layer: int, index: int, top: int = 8) 
 class FeatureStore:
     """Fetches feature cards for one transcoder set, caching each chunk on disk."""
 
-    def __init__(self, scan: str, cache_dir: Path | None = None) -> None:
+    def __init__(
+        self,
+        scan: str,
+        cache_dir: Path | None = None,
+        *,
+        attempts: int = 4,
+        backoff: float = 0.5,
+    ) -> None:
+        """
+        Args:
+            scan: The transcoder repository the graph was built with.
+            cache_dir: Where fetched chunks are kept between runs.
+            attempts: How many times to try a fetch before giving up. A labelling run makes one
+                request per head over hundreds of heads, so a transient failure is close to certain
+                somewhere in it, and a dropped label silently removes that head from the sample.
+            backoff: Seconds to wait after the first failure, doubling thereafter.
+        """
+        if attempts < 1:
+            raise ValueError(f"attempts must be at least 1, got {attempts}")
         self.scan = scan
         self.cache_dir = Path(cache_dir) if cache_dir is not None else DEFAULT_CACHE
+        self.attempts = attempts
+        self.backoff = backoff
         self._index: dict[str, Any] | None = None
         self._cards: dict[tuple[int, int], FeatureCard] = {}
 
@@ -145,6 +170,21 @@ class FeatureStore:
         return card
 
     def _download(self, layer: int, index: int) -> dict[str, Any]:
+        """Fetch one feature's chunk, retrying the failures that are worth retrying."""
+        import requests
+
+        delay = self.backoff
+        for attempt in range(1, self.attempts + 1):
+            try:
+                return self._fetch_once(layer, index)
+            except (requests.ConnectionError, requests.Timeout, requests.HTTPError) as exc:
+                if not _is_transient(exc) or attempt == self.attempts:
+                    raise
+            sleep(delay)
+            delay *= 2
+        raise AssertionError("unreachable: the loop either returns or raises")
+
+    def _fetch_once(self, layer: int, index: int) -> dict[str, Any]:
         import requests
         from huggingface_hub import get_token, hf_hub_url
 
@@ -159,9 +199,21 @@ class FeatureStore:
         if response.status_code != 206:
             # A server that ignores the Range header returns the whole file with status 200, and
             # every feature in the layer would then decode to the first one's card and be cached
-            # under its own name.
+            # under its own name. Retrying will not change that, so this is raised outside the
+            # retryable set.
             raise RuntimeError(
                 f"expected a partial response for {filename} bytes {start}-{end - 1}, "
                 f"got status {response.status_code} with {len(response.content)} bytes"
             )
         return parse_chunk(response.content)
+
+
+def _is_transient(error: Exception) -> bool:
+    """True when retrying the same request could plausibly succeed."""
+    import requests
+
+    if isinstance(error, requests.HTTPError):
+        response = getattr(error, "response", None)
+        status = getattr(response, "status_code", None)
+        return status in RETRYABLE_STATUS
+    return isinstance(error, requests.ConnectionError | requests.Timeout)

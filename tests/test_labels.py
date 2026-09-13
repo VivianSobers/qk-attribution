@@ -171,3 +171,126 @@ def test_an_interrupted_cache_write_leaves_no_file(tmp_path: Path):
     (path.parent / "0_0.partial").write_text("{truncated")
     path.write_text(json.dumps(EXAMPLE))
     assert store.card(0, 0).top_logits == [" Paris", " France", " Lyon"]
+
+
+class Recorder:
+    """Stands in for ``requests.get``, replaying a scripted sequence of outcomes."""
+
+    def __init__(self, outcomes: list):
+        self.outcomes = list(outcomes)
+        self.calls = 0
+
+    def __call__(self, *args, **kwargs):
+        self.calls += 1
+        outcome = self.outcomes[min(self.calls - 1, len(self.outcomes) - 1)]
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+class Response:
+    def __init__(self, status_code: int, content: bytes = b""):
+        self.status_code = status_code
+        self.content = content
+
+    def raise_for_status(self):
+        import requests
+
+        if self.status_code >= 400:
+            raise requests.HTTPError(f"status {self.status_code}", response=self)
+
+
+def install(monkeypatch, store: FeatureStore, get) -> list[float]:
+    """Point the store at a scripted transport and capture what it would sleep for."""
+    import requests
+
+    store._index = {"0": {"filename": "layer_0.bin", "offsets": [0, 100, 250]}}
+    slept: list[float] = []
+    monkeypatch.setattr(requests, "get", get)
+    monkeypatch.setattr("huggingface_hub.get_token", lambda: None)
+    monkeypatch.setattr("huggingface_hub.hf_hub_url", lambda *a, **k: "https://example/x")
+    monkeypatch.setattr("qk_attribution.labels.sleep", slept.append)
+    return slept
+
+
+def test_a_dropped_connection_is_retried(tmp_path: Path, monkeypatch):
+    """Label fetches failed intermittently over a long run and those heads were dropped."""
+    import requests
+
+    ok = Response(206, make_chunk(EXAMPLE))
+    store = FeatureStore("someone/set", cache_dir=tmp_path)
+    get = Recorder([requests.ConnectionError("reset"), requests.ConnectionError("reset"), ok])
+    slept = install(monkeypatch, store, get)
+    assert store.card(0, 1).top_logits == [" Paris", " France", " Lyon"]
+    assert get.calls == 3
+    assert len(slept) == 2
+
+
+def test_a_server_error_is_retried(tmp_path: Path, monkeypatch):
+    store = FeatureStore("someone/set", cache_dir=tmp_path)
+    get = Recorder([Response(503), Response(206, make_chunk(EXAMPLE))])
+    install(monkeypatch, store, get)
+    assert store.card(0, 1).act_max == 12.5
+    assert get.calls == 2
+
+
+def test_a_missing_feature_is_not_retried(tmp_path: Path, monkeypatch):
+    """A 404 will not become a 200; retrying it only slows the run down."""
+    import requests
+
+    store = FeatureStore("someone/set", cache_dir=tmp_path)
+    get = Recorder([Response(404)])
+    install(monkeypatch, store, get)
+    with pytest.raises(requests.HTTPError):
+        store.card(0, 1)
+    assert get.calls == 1
+
+
+def test_a_full_response_is_not_retried(tmp_path: Path, monkeypatch):
+    """Ignoring Range is a property of the server, not a transient fault."""
+    store = FeatureStore("someone/set", cache_dir=tmp_path)
+    get = Recorder([Response(200, make_chunk(EXAMPLE))])
+    install(monkeypatch, store, get)
+    with pytest.raises(RuntimeError, match="expected a partial response"):
+        store.card(0, 1)
+    assert get.calls == 1
+
+
+def test_retries_are_bounded_and_the_last_error_is_raised(tmp_path: Path, monkeypatch):
+    import requests
+
+    store = FeatureStore("someone/set", cache_dir=tmp_path, attempts=3)
+    get = Recorder([requests.Timeout("slow")])
+    slept = install(monkeypatch, store, get)
+    with pytest.raises(requests.Timeout):
+        store.card(0, 1)
+    assert get.calls == 3
+    assert len(slept) == 2
+
+
+def test_backoff_doubles_between_attempts(tmp_path: Path, monkeypatch):
+    import requests
+
+    store = FeatureStore("someone/set", cache_dir=tmp_path, attempts=4, backoff=0.5)
+    get = Recorder([requests.ConnectionError("reset")])
+    slept = install(monkeypatch, store, get)
+    with pytest.raises(requests.ConnectionError):
+        store.card(0, 1)
+    assert slept == [0.5, 1.0, 2.0]
+
+
+def test_a_single_attempt_never_sleeps(tmp_path: Path, monkeypatch):
+    import requests
+
+    store = FeatureStore("someone/set", cache_dir=tmp_path, attempts=1)
+    get = Recorder([requests.ConnectionError("reset")])
+    slept = install(monkeypatch, store, get)
+    with pytest.raises(requests.ConnectionError):
+        store.card(0, 1)
+    assert slept == []
+
+
+@pytest.mark.parametrize("attempts", [0, -1])
+def test_a_non_positive_attempt_count_is_rejected(tmp_path: Path, attempts: int):
+    with pytest.raises(ValueError, match="attempts"):
+        FeatureStore("someone/set", cache_dir=tmp_path, attempts=attempts)
