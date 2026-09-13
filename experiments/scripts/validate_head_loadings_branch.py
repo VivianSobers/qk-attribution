@@ -52,6 +52,8 @@ def model_for_scan(scan: str) -> str:
     for size in ("0.6b", "1.7b", "4b", "8b", "14b"):
         if f"qwen3-{size}-" in scan:
             return f"Qwen/Qwen3-{size.upper()}"
+    if scan == "gemma" or "gemma-scope-transcoders" in scan:
+        return "google/gemma-2-2b"
     raise ValueError(f"cannot infer a model from scan {scan!r}")
 
 
