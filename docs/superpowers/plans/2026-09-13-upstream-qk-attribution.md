@@ -20,6 +20,8 @@
 - `graph.activation_values` is aligned with `active_features`, not `selected_features`.
 - Commit messages: a `feat:`, `fix:`, `refactor:`, `perf:`, `docs:`, `test:` or `exp:` prefix, then 4 to 6 words. No trailers, no co-author lines, no mention of Claude in code, comments, messages or docs.
 - One commit per logical change, each in a working state.
+- Each commit passes `ruff check` alone, so a task adds only the imports it first uses.
+- Never pipe ruff or pytest before `&&` when gating a commit; the pipe hides the exit code.
 - Run tests with `cd ~/Documents/circuit-tracer && python3 -m pytest tests/test_qk_attribution.py -q`.
 
 ## File Structure
@@ -260,15 +262,6 @@ Example:
 
 from __future__ import annotations
 
-from dataclasses import dataclass
-from typing import TYPE_CHECKING
-
-import torch
-from torch import Tensor
-
-if TYPE_CHECKING:
-    from circuit_tracer.graph import Graph
-
 #: Position schemes that leave the score bilinear in the residual stream.
 BILINEAR_POSITION_SCHEMES = frozenset({"standard", "rotary", None})
 
@@ -398,7 +391,18 @@ def test_no_rotations_without_rotary_embeddings():
 Run: `cd ~/Documents/circuit-tracer && python3 -m pytest tests/test_qk_attribution.py -q`
 Expected: 6 failures with `AttributeError: module ... has no attribute 'FrozenScores'` / `'rotation_matrices'`; the 8 Task 1 tests still pass.
 
-- [ ] **Step 3: Append the implementation**
+- [ ] **Step 3: Add the imports this task first uses, then append the implementation**
+
+Below `from __future__ import annotations`, add:
+
+```python
+from dataclasses import dataclass
+
+import torch
+from torch import Tensor
+```
+
+Then append:
 
 ```python
 def _kv_group(model, head: int) -> int:
@@ -696,7 +700,24 @@ def test_sources_and_the_remainder_reconstruct_the_residual():
 Run: `cd ~/Documents/circuit-tracer && python3 -m pytest tests/test_qk_attribution.py -q`
 Expected: 4 failures with `AttributeError: ... 'feature_sources'`; 20 earlier tests pass.
 
-- [ ] **Step 3: Append the implementation**
+- [ ] **Step 3: Add the type-only `Graph` import, then append the implementation**
+
+Change the imports so they read:
+
+```python
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import TYPE_CHECKING
+
+import torch
+from torch import Tensor
+
+if TYPE_CHECKING:
+    from circuit_tracer.graph import Graph
+```
+
+Then append:
 
 ```python
 @dataclass(frozen=True)
