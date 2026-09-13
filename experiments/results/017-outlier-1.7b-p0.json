@@ -1,0 +1,39 @@
+{
+ "reference_graph": "spike_out/qwen3-1.7b-graph.pt",
+ "float32_graph": "spike_out/qwen3-1.7b-graph-float32.pt",
+ "model": "Qwen/Qwen3-1.7B",
+ "scan": "mwhanna/qwen3-1.7b-transcoders-lowl0",
+ "seed": 0,
+ "target_triple": [
+  19,
+  3,
+  114698
+ ],
+ "source_triple": [
+  4,
+  1,
+  69573
+ ],
+ "reference": {
+  "present": true,
+  "target_node": 7049,
+  "source_node": 2404,
+  "adjacency": 0.0133056640625,
+  "edge_effect": 0.010112036019563675,
+  "ratio": 0.7599798080024369,
+  "target_activation": 29.25,
+  "source_activation": 5.1875,
+  "graph_dtype": "torch.bfloat16"
+ },
+ "float32": {
+  "present": true,
+  "target_node": 7047,
+  "source_node": 2401,
+  "adjacency": 0.01008402556180954,
+  "edge_effect": 0.010083973407745361,
+  "ratio": 0.9999948280511728,
+  "target_activation": 29.26909065246582,
+  "source_activation": 5.173135757446289,
+  "graph_dtype": "torch.float32"
+ }
+}
