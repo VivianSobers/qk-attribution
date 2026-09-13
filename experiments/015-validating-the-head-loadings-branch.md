@@ -55,6 +55,14 @@ rows test the graph just as much.
 
 ## Where bfloat16 graphs disagree
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/015-graph-precision-dark.png">
+  <img alt="Distance of each edge's forward effect from its adjacency entry, against the size of the entry, for Qwen3-0.6B and Qwen3-1.7B. Edges from bfloat16 graphs sit between about 1e-4 and 1 and spread furthest at small sizes; edges from float32 graphs all sit below 2e-4. Arrows join the four worst bfloat16 edges to the same edges in float32 graphs, where they agree." src="figures/015-graph-precision-light.png">
+</picture>
+
+Every edge from the four runs, drawn by `experiments/scripts/plot_graph_precision.py`. Float32
+deviations below 1e-6, some of them exactly zero, are drawn on the floor.
+
 Against bfloat16 graphs the ratio spreads widely, and the size of the spread depends on the size of
 the edge. Every edge that misses by 10% or more comes from the random half: 9 on 0.6B, with
 |adjacency| no larger than 5.7e-03, and 8 on 1.7B, no larger than 1.9e-02. The median |adjacency|
