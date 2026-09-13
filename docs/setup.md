@@ -69,8 +69,8 @@ you would rather create it yourself.
 
 ### 5. Rotate the SSH password
 
-`ccbd@123` is in this session's history and in the shell history on both boxes. Rotate it if it
-protects anything that matters.
+The SSH password was shared in a chat session and is in the shell history on both boxes. Rotate
+it if it protects anything that matters, and use key-based login from then on.
 
 ---
 
