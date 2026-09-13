@@ -94,8 +94,9 @@ per-layer transcoders above were tested on real weights.
 
 ## Tests
 
-`tests/test_head_loadings.py` adds 25 tests that run in under ten seconds with no weights and no
-GPU, against a stub with random weights. The central ones check the partition property at every
+`tests/test_head_loadings.py` adds 25 tests that need no weights and no GPU, run against a stub with
+random weights. With `tests/test_graph.py` they pass in about 11 seconds, and `ruff check`,
+`ruff format --check` and `pyright` are clean on the changed files. The central ones check the partition property at every
 valid attention layer and that the single sweep reproduces the per-layer split. The rest cover the
 refusals above, the node-index arithmetic, and a regression for indexing `activation_values`. I
 have not run the GPU part of the existing suite.
