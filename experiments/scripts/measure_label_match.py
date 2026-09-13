@@ -50,6 +50,7 @@ query_position = seq - 1
 rotations = rotation_matrices(model, seq)
 tokens = [model.tokenizer.decode([int(t)]) for t in graph.input_tokens]
 store = FeatureStore(fixtures.graph.scan)
+unlabelled: list[dict] = []
 rng = random.Random(args.seed)
 print("tokens:", " | ".join(f"{i}:{t!r}" for i, t in enumerate(tokens)))
 
@@ -110,7 +111,18 @@ for layer in sampled_layers(model, count=6):
         try:
             card = store.card(feature_layer, feature_id)
         except Exception as exc:  # noqa: BLE001
+            # Recorded rather than passed over in silence: a head whose label cannot be fetched
+            # leaves the sample, and the match rate below is only honest if the denominator says
+            # how many left.
             print(f"  label unavailable for L{feature_layer}#{feature_id}: {type(exc).__name__}")
+            unlabelled.append(
+                {
+                    "layer": layer,
+                    "head": head,
+                    "feature": f"L{feature_layer}#{feature_id}",
+                    "error": type(exc).__name__,
+                }
+            )
             continue
 
         others = [p for p in range(query_position + 1) if p != position]
@@ -136,6 +148,8 @@ live = [r for r in rows if not r["is_dead"]]
 matches = sum(r["match"] for r in live)
 controls = sum(r["control_match"] for r in live)
 print(f"\nheads examined: {len(rows)} ({len(live)} with a live top feature)")
+if unlabelled:
+    print(f"heads dropped because no label could be fetched: {len(unlabelled)}")
 if live:
     print(
         f"top key feature fires on the token it points to: {matches}/{len(live)} "
@@ -160,6 +174,8 @@ with open(args.out, "w") as fh:
             "tokens": tokens,
             "content_threshold": args.content_threshold,
             "n_heads_examined": len(rows),
+            "n_unlabelled": len(unlabelled),
+            "unlabelled": unlabelled,
             "n_live": len(live),
             "n_match": matches,
             "n_control_match": controls,
