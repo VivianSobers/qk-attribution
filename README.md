@@ -46,9 +46,33 @@ same-position competitor only 61% of the time.
 Two caveats sit on top of that. Feature terms account for 8% to 21% of the score with the low-L0
 transcoders published for Qwen3-0.6B. With the higher-L0 sets they reach 63% on one sampled
 Qwen3-4B head and 86% on one Qwen3-8B head, though the explanations on those models did not read
-any better. And the
-exactness holds only while the normalisation scales are frozen, as attribution graphs freeze them:
-let RMSNorm respond and the same prediction correlates at 0.17 to 0.54 instead of 1.0.
+any better. And the exactness holds only while the normalisation scales are frozen, as attribution
+graphs freeze them: let RMSNorm respond and the same prediction correlates at 0.17 to 0.54 instead
+of 1.0.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="experiments/figures/011-interventions-dark.png">
+  <img alt="Predicted against measured change in attention score when the top attributed feature is removed, for 263 heads on Qwen3-0.6B and Qwen3-1.7B. With normalisation frozen every point lies on the diagonal; with normalisation free to respond the points scatter widely around it." src="experiments/figures/011-interventions-light.png">
+</picture>
+
+Every head from the intervention runs, four prompts per model. The left panel is the setting
+attribution graphs use; the right shows how much of that exactness comes from freezing the norms.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="experiments/figures/010-label-match-dark.png">
+  <img alt="Share of heads whose strongest key-side feature fires on the token at the position it points to, against a random other position: 146 of 171 against 22 of 171 on Qwen3-0.6B, 111 of 153 against 11 of 153 on Qwen3-1.7B, and 70 of 88 against 9 of 88 on Qwen3-4B." src="experiments/figures/010-label-match-light.png">
+</picture>
+
+Whether the explanation's top key feature fires on the token it points to, against a random other
+position in the same prompt. Counts are printed on each bar.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="experiments/figures/009-models-dark.png">
+  <img alt="Two panels over four Qwen3 models. Left: feature-pair share of the attention score at four sampled depths, staying under a third for the low-L0 models and peaking at 0.63 on 4B and 0.86 on 8B at three fifths of the depth. Right: median error of the feature-pair block truncated to rank 1 through 64, falling similarly for all four models, with the high-L0 models slightly harder to compress." src="experiments/figures/009-models-light.png">
+</picture>
+
+The four-model comparison. Each point on the left is one head on one prompt, so single points should
+not be leaned on; the right panel is a median over 64 to 128 blocks per model.
 
 ## The form that actually holds
 
@@ -64,6 +88,13 @@ rather than being one matrix, and the RMS scales are per-position scalars frozen
 circuit-tracer already freezes layernorm scales. This reproduces the model to 2.5e-07 median across
 all 448 (layer, head) pairs. Gemma-2's attention-score soft-capping does not reduce this way and is
 refused rather than approximated.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="experiments/figures/003-score-form-dark.png">
+  <img alt="Cumulative share of Qwen3-0.6B's 448 heads against relative error in reproducing the model's attention scores. The corrected form sits near 2.5e-07 on every head, leaving rotary embeddings out gives a median of 0.099, and the plain W_Q W_K transpose product has a median of 1.2, reaching above 100 on some heads." src="experiments/figures/003-score-form-light.png">
+</picture>
+
+Each curve is the share of heads reproduced to within a given error, per candidate form.
 
 ## What has been measured
 
