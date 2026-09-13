@@ -1,0 +1,142 @@
+{
+ "model": "Qwen/Qwen3-8B",
+ "graph": "spike_out/qwen3-8b-graph.pt",
+ "scan": "mwhanna/qwen3-8b-transcoders",
+ "seed": 0,
+ "seq": 9,
+ "model_dtype": "torch.bfloat16",
+ "transcoder_dtype": "torch.bfloat16",
+ "graph_dtype": "torch.bfloat16",
+ "n_features": 7500,
+ "layer": 27,
+ "head": 14,
+ "query_position": 8,
+ "tokens": [
+  "<|im_end|>",
+  "The",
+  " capital",
+  " of",
+  " the",
+  " state",
+  " containing",
+  " Dallas",
+  " is"
+ ],
+ "attends_to": [
+  {
+   "position": 0,
+   "token": "<|im_end|>",
+   "probability": 0.44140625
+  },
+  {
+   "position": 8,
+   "token": " is",
+   "probability": 0.1572265625
+  },
+  {
+   "position": 2,
+   "token": " capital",
+   "probability": 0.115234375
+  },
+  {
+   "position": 6,
+   "token": " containing",
+   "probability": 0.08984375
+  },
+  {
+   "position": 7,
+   "token": " Dallas",
+   "probability": 0.07421875
+  }
+ ],
+ "reconstruction_error": 0.06744853407144547,
+ "feature_share": 0.1337229162454605,
+ "pairs": [
+  {
+   "rank": 0,
+   "contribution": 0.0838247761130333,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#99758 fires on ' capital', ' prices', ' price', ' cost' -> promotes ' debt', ' North', '\u88c5', '\u9ed8'",
+   "key": "L15#161843 fires on ' ', '1', '2', 'such' -> promotes '\u624d\u6709', 'ystack', 'okie', '\u6863\u6b21'"
+  },
+  {
+   "rank": 1,
+   "contribution": 0.07497315853834152,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#101473 fires on ' tactic', ' volcano', ' sidewalks', ' alley' -> promotes 'iest', ' m\u00e9g', '/vendor', '\u52b3'",
+   "key": "L18#71594 fires on ' ', '1', 'such', 'Maint' -> promotes ' Dun', '\u4e3e', 'lean', '\u8001\u4eba\u5bb6'"
+  },
+  {
+   "rank": 2,
+   "contribution": 0.0645965114235878,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#154155 fires on ' of', ' from', ':', ' What' -> promotes ' ki\u1ec7n', 'cdb', 'WithName', 'acon'",
+   "key": "L18#71594 fires on ' ', '1', 'such', 'Maint' -> promotes ' Dun', '\u4e3e', 'lean', '\u8001\u4eba\u5bb6'"
+  },
+  {
+   "rank": 3,
+   "contribution": 0.061232127249240875,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#99758 fires on ' capital', ' prices', ' price', ' cost' -> promotes ' debt', ' North', '\u88c5', '\u9ed8'",
+   "key": "L14#24873 fires on ' sub', 'h', '-the', '2' -> promotes '\u4e2d\u573a', '\u68a6\u60f3', '.ai', ' dream'"
+  },
+  {
+   "rank": 4,
+   "contribution": -0.05402396619319916,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#154155 fires on ' of', ' from', ':', ' What' -> promotes ' ki\u1ec7n', 'cdb', 'WithName', 'acon'",
+   "key": "L14#24873 fires on ' sub', 'h', '-the', '2' -> promotes '\u4e2d\u573a', '\u68a6\u60f3', '.ai', ' dream'"
+  },
+  {
+   "rank": 5,
+   "contribution": 0.0538528710603714,
+   "key_position": 4,
+   "key_token": " the",
+   "query": "L0#99758 fires on ' capital', ' prices', ' price', ' cost' -> promotes ' debt', ' North', '\u88c5', '\u9ed8'",
+   "key": "L18#110080 fires on ' a', ' been', ' the', ' come' -> promotes '\u00e9po', 'p\u00f5e', 'i\u00e9ndo', 'szed'"
+  }
+ ],
+ "top_key_features": [
+  {
+   "contribution": 0.5266459584236145,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L18#71594 fires on ' ', '1', 'such', 'Maint' -> promotes ' Dun', '\u4e3e', 'lean', '\u8001\u4eba\u5bb6'"
+  },
+  {
+   "contribution": -0.32710665464401245,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L13#155768 fires on ' be', '1', 'l', '-t' -> promotes ' EA', 'atr', 'etr', ' tern'"
+  },
+  {
+   "contribution": 0.2993013560771942,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L18#110080 fires on ' a', ' been', ' the', ' come' -> promotes '\u00e9po', 'p\u00f5e', 'i\u00e9ndo', 'szed'"
+  },
+  {
+   "contribution": 0.2880365252494812,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L15#161843 fires on ' ', '1', '2', 'such' -> promotes '\u624d\u6709', 'ystack', 'okie', '\u6863\u6b21'"
+  },
+  {
+   "contribution": 0.2545362710952759,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L19#149787 fires on '-F', ' one', ' been', ' the' -> promotes 'h\u1edf', 'p\u00f5e', 'szed', 'm\u00f3vel'"
+  },
+  {
+   "contribution": 0.22162406146526337,
+   "key_position": 4,
+   "key_token": " the",
+   "key": "L14#24873 fires on ' sub', 'h', '-the', '2' -> promotes '\u4e2d\u573a', '\u68a6\u60f3', '.ai', ' dream'"
+  }
+ ]
+}
