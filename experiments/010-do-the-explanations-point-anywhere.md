@@ -27,6 +27,13 @@ any position holding `' the'`, and without a baseline that would look like succe
 
 ## Result
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/010-label-match-dark.png">
+  <img alt="Share of heads whose top key feature fires on the token it points to, against a random other position, pooled per model." src="figures/010-label-match-light.png">
+</picture>
+
+The table below pooled per model, drawn by `experiments/scripts/plot_label_match.py`.
+
 | Model | Prompt | Matches | Control |
 |---|---|---|---|
 | 0.6B | capital / Dallas | 41/45 = 91.1% | 15.6% |

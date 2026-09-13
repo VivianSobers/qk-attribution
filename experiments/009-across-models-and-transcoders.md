@@ -44,6 +44,13 @@ precision section below shows for 4B.
 
 ## The feature share rises with model size and transcoder set
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/009-models-dark.png">
+  <img alt="Feature-pair share by sampled depth and truncation error by rank for Qwen3-0.6B, 1.7B, 4B and 8B." src="figures/009-models-light.png">
+</picture>
+
+Both tables below as lines, drawn by `experiments/scripts/plot_models.py`.
+
 Feature-feature share of the score norm, one head per sampled layer:
 
 | Model | L0 | 1/5 depth | 2/5 | 3/5 | 4/5 |

@@ -31,6 +31,13 @@ their interaction is then a `d_head x d_head` rotation apart.
 
 ## Results
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/003-score-form-dark.png">
+  <img alt="Cumulative share of the 448 heads against relative error for three score forms: the corrected form near 2.5e-07 on every head, rotary left out with median 0.099, and the plain product with median 1.2." src="figures/003-score-form-light.png">
+</picture>
+
+Every head, drawn by `experiments/scripts/plot_score_form.py`.
+
 Relative Frobenius error against `hook_attn_scores`, restricted to positions the causal mask keeps.
 For reference the true scores have a median standard deviation of 2.30.
 

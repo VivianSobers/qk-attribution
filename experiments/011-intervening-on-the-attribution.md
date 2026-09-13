@@ -29,6 +29,13 @@ wrong produces predictions that are 4 to 6 times too large, which is how both er
 
 ## The prediction is exact
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/011-interventions-dark.png">
+  <img alt="Predicted against measured score change for 263 heads, with normalisation frozen and with it free to respond." src="figures/011-interventions-light.png">
+</picture>
+
+Every head from both models and all four prompts, drawn by `experiments/scripts/plot_interventions.py`.
+
 | Model | Prompt | Heads agreeing to better than 1e-04 |
 |---|---|---|
 | 0.6B | capital / Dallas | 36/36 |
