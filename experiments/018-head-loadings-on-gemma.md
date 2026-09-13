@@ -1,12 +1,13 @@
 # 018: on Gemma-2-2B the port missed two steps, and now agrees
 
 Date: 2026-09-13
-Machines: worker-2 (Gemma-2-2B) and worker-1 (Qwen3-0.6B regression check), RTX 4090 each
+Machines: worker-2 (Gemma-2-2B, Qwen3-1.7B regression check) and worker-1 (Qwen3-0.6B regression
+check), RTX 4090 each
 Scripts: `experiments/scripts/validate_head_loadings_branch.py`,
 `experiments/scripts/diagnose_gemma_readout.py`
 Raw output: `experiments/results/018-head-loadings-branch-gemma-2-2b.json` (branch at `dd8ecbe`),
 `experiments/results/018-head-loadings-fixed-gemma-2-2b.json` (branch at `6815d77`),
-`experiments/results/018-head-loadings-fixed-qwen3-0.6b-float32-graphs.json`,
+`experiments/results/018-head-loadings-fixed-qwen3-{0.6b,1.7b}-float32-graphs.json`,
 `experiments/results/018-gemma-readout-diagnosis.log`
 Config: seed 0, torch 2.14.0+cu130, Gemma-2-2B and `mwhanna/gemma-scope-transcoders` in float32,
 one graph attributed with `--dtype float32` for "The capital of the state containing Dallas is"
@@ -77,9 +78,11 @@ recorded the module's md5, and the diagnosis loaded each version from an explici
 
 ## Qwen3 is unchanged
 
-The fixed module was rerun on the four Qwen3-0.6B float32 graphs from experiment 015, with the same
-240 edges. Edge effects moved by at most 2.4e-06 relative, the worst |ratio - 1| is 1.57e-04 as
-before, and the partition error is at most 9.8e-06. The Qwen3 transcoders read `mlp.hook_in` and
+The fixed module was rerun on the float32 graphs from experiment 015, four prompts per model, with
+the same 240 edges per model. On Qwen3-0.6B edge effects moved by at most 2.4e-06 relative, the
+worst |ratio - 1| is 1.57e-04 as before, and the partition error is at most 9.8e-06. On Qwen3-1.7B
+they moved by at most 6.9e-06, the worst |ratio - 1| is 4.9e-05, and the partition error is at most
+1.2e-05. The Qwen3 transcoders read `mlp.hook_in` and
 the model has no `ln1_post`, so the arithmetic there is the same as before.
 
 ## Demo notebooks
