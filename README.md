@@ -78,6 +78,9 @@ refused rather than approximated.
 | Does the ranking predict the pattern? | Yes: 2 to 10 times a matched control, in ~90% of cases | `experiments/012` |
 | How long is an explanation? | 25 features for half the movement, 197 for 90% | `experiments/013` |
 | Does the upstream port agree? | Yes: median ratio 0.9968, partition error 8.3e-06 | `experiments/014` |
+| Does the branch code agree, on float32 graphs? | 480 of 480 edges within 1.6e-04 on 0.6B and 1.7B | `experiments/015` |
+| Does the QK port match the model's scores? | Yes, to 6e-07 worst over 448 heads | `experiments/016` |
+| Were the outlier edges the loadings' fault? | No; bfloat16 graphs overstated them 1.3 to 5.6 times | `experiments/017` |
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
