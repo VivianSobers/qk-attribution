@@ -117,6 +117,7 @@ Each curve is the share of heads reproduced to within a given error, per candida
 | Does the branch code agree, on float32 graphs? | 480 of 480 edges within 1.6e-04 on 0.6B and 1.7B | `experiments/015` |
 | Does the QK port match the model's scores? | Yes, to 6e-07 worst over 448 heads | `experiments/016` |
 | Were the outlier edges the loadings' fault? | No; bfloat16 graphs overstated them 1.3 to 5.6 times | `experiments/017` |
+| Does the port work on Gemma-2? | Not at first (median ratio 0.607); after two fixes, 60 of 60 edges within 1e-4 | `experiments/018` |
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
@@ -141,7 +142,7 @@ worst bfloat16 edges agree once followed into the float32 graphs.
 
 | Pull request | Contents | Evidence |
 |---|---|---|
-| [circuit-tracer#114](https://github.com/decoderesearch/circuit-tracer/pull/114) | Head loadings: per-layer and single-sweep splits of an edge across attention heads | `experiments/014`, `015`, `017` |
+| [circuit-tracer#114](https://github.com/decoderesearch/circuit-tracer/pull/114) | Head loadings: per-layer and single-sweep splits of an edge across attention heads | `experiments/014`, `015`, `017`, `018` |
 
 The QK attribution port sits on the fork's `main` at `46cbddd`, checked against real attention
 scores in `experiments/016`, and waits on review of the first pull request.
