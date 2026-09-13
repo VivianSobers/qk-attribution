@@ -1,0 +1,413 @@
+{
+ "graph": "spike_out/qwen3-1.7b-graph.pt",
+ "model": "Qwen3-1.7B",
+ "scan": "mwhanna/qwen3-1.7b-transcoders-lowl0",
+ "seed": 0,
+ "n_edges": 40,
+ "median_ratio": 0.9968027472496033,
+ "std_ratio": 0.04354621097445488,
+ "max_partition_error": 6.103515625e-05,
+ "max_relative_partition_error": 8.270315447589383e-06,
+ "rows": [
+  {
+   "target": 7496,
+   "source": 7490,
+   "source_layer": 26,
+   "target_layer": 27,
+   "adjacency": -370.0,
+   "edge_effect": -369.97259521484375,
+   "ratio": 0.9999259330130912,
+   "max_partition_error": 0.0
+  },
+  {
+   "target": 7494,
+   "source": 7451,
+   "source_layer": 25,
+   "target_layer": 27,
+   "adjacency": 201.0,
+   "edge_effect": 200.99781799316406,
+   "ratio": 0.9999891442445973,
+   "max_partition_error": 1.52587890625e-05
+  },
+  {
+   "target": 7471,
+   "source": 7206,
+   "source_layer": 21,
+   "target_layer": 26,
+   "adjacency": 188.0,
+   "edge_effect": 186.98666381835938,
+   "ratio": 0.9946099139274435,
+   "max_partition_error": 1.52587890625e-05
+  },
+  {
+   "target": 7498,
+   "source": 7451,
+   "source_layer": 25,
+   "target_layer": 27,
+   "adjacency": -169.0,
+   "edge_effect": -171.5946502685547,
+   "ratio": 1.0153529601689626,
+   "max_partition_error": 4.57763671875e-05
+  },
+  {
+   "target": 7499,
+   "source": 7451,
+   "source_layer": 25,
+   "target_layer": 27,
+   "adjacency": 163.0,
+   "edge_effect": 162.54322814941406,
+   "ratio": 0.9971977187080617,
+   "max_partition_error": 6.103515625e-05
+  },
+  {
+   "target": 7322,
+   "source": 7108,
+   "source_layer": 20,
+   "target_layer": 23,
+   "adjacency": 156.0,
+   "edge_effect": 155.23553466796875,
+   "ratio": 0.9950995812049279,
+   "max_partition_error": 1.52587890625e-05
+  },
+  {
+   "target": 7494,
+   "source": 7490,
+   "source_layer": 26,
+   "target_layer": 27,
+   "adjacency": 156.0,
+   "edge_effect": 155.43406677246094,
+   "ratio": 0.9963722229003906,
+   "max_partition_error": 3.0517578125e-05
+  },
+  {
+   "target": 5737,
+   "source": 5411,
+   "source_layer": 7,
+   "target_layer": 9,
+   "adjacency": 153.0,
+   "edge_effect": 152.8673553466797,
+   "ratio": 0.9991330414815666,
+   "max_partition_error": 1.52587890625e-05
+  },
+  {
+   "target": 7497,
+   "source": 7451,
+   "source_layer": 25,
+   "target_layer": 27,
+   "adjacency": 147.0,
+   "edge_effect": 146.3678741455078,
+   "ratio": 0.9956998241191007,
+   "max_partition_error": 3.0517578125e-05
+  },
+  {
+   "target": 7287,
+   "source": 7076,
+   "source_layer": 19,
+   "target_layer": 22,
+   "adjacency": 143.0,
+   "edge_effect": 142.27627563476562,
+   "ratio": 0.9949389904529065,
+   "max_partition_error": 1.52587890625e-05
+  },
+  {
+   "target": 7499,
+   "source": 7490,
+   "source_layer": 26,
+   "target_layer": 27,
+   "adjacency": 134.0,
+   "edge_effect": 133.36927795410156,
+   "ratio": 0.9952931190604595,
+   "max_partition_error": 1.52587890625e-05
+  },
+  {
+   "target": 7108,
+   "source": 6741,
+   "source_layer": 16,
+   "target_layer": 20,
+   "adjacency": 128.0,
+   "edge_effect": 128.06582641601562,
+   "ratio": 1.000514268875122,
+   "max_partition_error": 0.0
+  },
+  {
+   "target": 7206,
+   "source": 7129,
+   "source_layer": 20,
+   "target_layer": 21,
+   "adjacency": 128.0,
+   "edge_effect": 128.25892639160156,
+   "ratio": 1.0020228624343872,
+   "max_partition_error": 0.0
+  },
+  {
+   "target": 7108,
+   "source": 7033,
+   "source_layer": 19,
+   "target_layer": 20,
+   "adjacency": 124.5,
+   "edge_effect": 124.46171569824219,
+   "ratio": 0.9996924955682104,
+   "max_partition_error": 0.0
+  },
+  {
+   "target": 7498,
+   "source": 7490,
+   "source_layer": 26,
+   "target_layer": 27,
+   "adjacency": -124.0,
+   "edge_effect": -125.00426483154297,
+   "ratio": 1.008098909931798,
+   "max_partition_error": 3.0517578125e-05
+  },
+  {
+   "target": 7180,
+   "source": 7108,
+   "source_layer": 20,
+   "target_layer": 21,
+   "adjacency": 113.5,
+   "edge_effect": 113.38433074951172,
+   "ratio": 0.9989808876608962,
+   "max_partition_error": 7.62939453125e-06
+  },
+  {
+   "target": 7495,
+   "source": 7490,
+   "source_layer": 26,
+   "target_layer": 27,
+   "adjacency": -110.0,
+   "edge_effect": -109.54559326171875,
+   "ratio": 0.9958690296519886,
+   "max_partition_error": 7.62939453125e-06
+  },
+  {
+   "target": 5739,
+   "source": 5411,
+   "source_layer": 7,
+   "target_layer": 9,
+   "adjacency": 108.5,
+   "edge_effect": 108.47958374023438,
+   "ratio": 0.9998118317072293,
+   "max_partition_error": 7.62939453125e-06
+  },
+  {
+   "target": 7206,
+   "source": 6772,
+   "source_layer": 16,
+   "target_layer": 21,
+   "adjacency": 102.0,
+   "edge_effect": 102.07455444335938,
+   "ratio": 1.000730925915288,
+   "max_partition_error": 7.62939453125e-06
+  },
+  {
+   "target": 7478,
+   "source": 7446,
+   "source_layer": 25,
+   "target_layer": 26,
+   "adjacency": -102.0,
+   "edge_effect": -101.0638198852539,
+   "ratio": 0.9908217635809207,
+   "max_partition_error": 7.62939453125e-06
+  },
+  {
+   "target": 6456,
+   "source": 3647,
+   "source_layer": 4,
+   "target_layer": 14,
+   "adjacency": 0.007476806640625,
+   "edge_effect": 0.007535352371633053,
+   "ratio": 1.0078303123007015,
+   "max_partition_error": 2.7939677238464355e-09
+  },
+  {
+   "target": 6668,
+   "source": 6189,
+   "source_layer": 12,
+   "target_layer": 15,
+   "adjacency": 0.0908203125,
+   "edge_effect": 0.08407263457775116,
+   "ratio": 0.9257029871786794,
+   "max_partition_error": 1.4901161193847656e-08
+  },
+  {
+   "target": 2637,
+   "source": 727,
+   "source_layer": 3,
+   "target_layer": 4,
+   "adjacency": -0.002777099609375,
+   "edge_effect": -0.0028168584685772657,
+   "ratio": 1.0143166845971412,
+   "max_partition_error": 9.313225746154785e-10
+  },
+  {
+   "target": 5630,
+   "source": 4949,
+   "source_layer": 5,
+   "target_layer": 9,
+   "adjacency": -0.005035400390625,
+   "edge_effect": -0.005026158876717091,
+   "ratio": 0.9981646913470644,
+   "max_partition_error": 9.313225746154785e-10
+  },
+  {
+   "target": 7187,
+   "source": 2331,
+   "source_layer": 4,
+   "target_layer": 21,
+   "adjacency": 0.0078125,
+   "edge_effect": 0.007679761853069067,
+   "ratio": 0.9830095171928406,
+   "max_partition_error": 4.190951585769653e-09
+  },
+  {
+   "target": 7049,
+   "source": 2404,
+   "source_layer": 4,
+   "target_layer": 19,
+   "adjacency": 0.0133056640625,
+   "edge_effect": 0.010112036019563675,
+   "ratio": 0.7599798080024369,
+   "max_partition_error": 5.587935447692871e-08
+  },
+  {
+   "target": 6570,
+   "source": 5837,
+   "source_layer": 10,
+   "target_layer": 14,
+   "adjacency": 0.02294921875,
+   "edge_effect": 0.022320501506328583,
+   "ratio": 0.9726039805310838,
+   "max_partition_error": 5.587935447692871e-09
+  },
+  {
+   "target": 5934,
+   "source": 2242,
+   "source_layer": 4,
+   "target_layer": 10,
+   "adjacency": -0.00168609619140625,
+   "edge_effect": -0.001617231173440814,
+   "ratio": 0.95915712382459,
+   "max_partition_error": 6.984919309616089e-10
+  },
+  {
+   "target": 6994,
+   "source": 4931,
+   "source_layer": 5,
+   "target_layer": 18,
+   "adjacency": 0.004302978515625,
+   "edge_effect": 0.0040543824434280396,
+   "ratio": 0.9422269780585106,
+   "max_partition_error": 1.862645149230957e-09
+  },
+  {
+   "target": 6286,
+   "source": 1635,
+   "source_layer": 4,
+   "target_layer": 13,
+   "adjacency": -0.00848388671875,
+   "edge_effect": -0.008388655260205269,
+   "ratio": 0.9887750200230441,
+   "max_partition_error": 2.7939677238464355e-09
+  },
+  {
+   "target": 5346,
+   "source": 4515,
+   "source_layer": 5,
+   "target_layer": 7,
+   "adjacency": -0.0026702880859375,
+   "edge_effect": -0.00266841403208673,
+   "ratio": 0.9992981828962053,
+   "max_partition_error": 2.3283064365386963e-10
+  },
+  {
+   "target": 7152,
+   "source": 468,
+   "source_layer": 2,
+   "target_layer": 20,
+   "adjacency": 0.0002765655517578125,
+   "edge_effect": 0.0002604112960398197,
+   "ratio": 0.941589776400862,
+   "max_partition_error": 2.153683453798294e-09
+  },
+  {
+   "target": 4627,
+   "source": 928,
+   "source_layer": 3,
+   "target_layer": 5,
+   "adjacency": -0.0035552978515625,
+   "edge_effect": -0.0035558706149458885,
+   "ratio": 1.0001611013780847,
+   "max_partition_error": 1.1641532182693481e-09
+  },
+  {
+   "target": 5790,
+   "source": 667,
+   "source_layer": 3,
+   "target_layer": 9,
+   "adjacency": -0.004058837890625,
+   "edge_effect": -0.003908575512468815,
+   "ratio": 0.9629789653577303,
+   "max_partition_error": 6.51925802230835e-09
+  },
+  {
+   "target": 4631,
+   "source": 3196,
+   "source_layer": 4,
+   "target_layer": 5,
+   "adjacency": 0.010498046875,
+   "edge_effect": 0.010464482009410858,
+   "ratio": 0.9968027514080668,
+   "max_partition_error": 0.0
+  },
+  {
+   "target": 4190,
+   "source": 2351,
+   "source_layer": 4,
+   "target_layer": 5,
+   "adjacency": -0.00787353515625,
+   "edge_effect": -0.00788121484220028,
+   "ratio": 1.0009753796481347,
+   "max_partition_error": 1.862645149230957e-09
+  },
+  {
+   "target": 5573,
+   "source": 1416,
+   "source_layer": 4,
+   "target_layer": 8,
+   "adjacency": 0.00250244140625,
+   "edge_effect": 0.0022974363528192043,
+   "ratio": 0.9180779805997523,
+   "max_partition_error": 3.958120942115784e-09
+  },
+  {
+   "target": 7300,
+   "source": 3957,
+   "source_layer": 4,
+   "target_layer": 22,
+   "adjacency": -0.029541015625,
+   "edge_effect": -0.03007986769080162,
+   "ratio": 1.0182408104258136,
+   "max_partition_error": 9.313225746154785e-09
+  },
+  {
+   "target": 4702,
+   "source": 2948,
+   "source_layer": 4,
+   "target_layer": 5,
+   "adjacency": 0.0015869140625,
+   "edge_effect": 0.0016378287691622972,
+   "ratio": 1.0320840982290416,
+   "max_partition_error": 4.656612873077393e-10
+  },
+  {
+   "target": 5978,
+   "source": 1432,
+   "source_layer": 4,
+   "target_layer": 11,
+   "adjacency": -0.00750732421875,
+   "edge_effect": -0.0074797021225094795,
+   "ratio": 0.9963206469528074,
+   "max_partition_error": 1.3969838619232178e-09
+  }
+ ]
+}
