@@ -42,8 +42,10 @@ is the same result on a different model.
 
 ## The one outlier
 
-One edge of 40 came in at 0.760. It is a strong edge, adjacency 0.0133, which rules out the small
-denominators that explain most of the tail. This is not resolved. The candidates are the graph's
+One edge of 40 came in at 0.760. It is not a strong edge, although this write-up first called it one: at adjacency 0.0133 it
+came from the randomly sampled half, and its magnitude ranks 24 of 40 against a sample median
+of 51. On Qwen3-0.6B, experiment 015 later found that every edge outside 10% of unity is a small
+edge from the random half, so this one fits that pattern rather than standing apart from it. This is not resolved. The candidates are the graph's
 bfloat16 accumulation over a path with many contributing heads, and a genuine difference between
 what circuit-tracer's backward pass counts and what forward propagation through frozen attention
 counts. Distinguishing them needs the same edge recomputed with a float32 graph, which is the

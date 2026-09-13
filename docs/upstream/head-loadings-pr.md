@@ -55,8 +55,8 @@ the edge effect. The spread against the adjacency matrix is the graph's own bflo
 re-running the same comparison with the graph in three dtype combinations moves the residual with
 the graph's storage dtype and not with the loadings.
 
-One edge of 40 came in at 0.760, and I cannot account for it. It is a strong edge, so the small
-denominators that explain most of the tail do not apply here. The candidates I have left are
+One edge of 40 came in at 0.760, and I cannot account for it. It came from the randomly sampled half: at 0.0133, its magnitude ranks 24 of 40 against a sample
+median of 51. The candidates I have left are
 bfloat16 accumulation over a path with many contributing heads, and a real difference between what
 the backward pass counts and what forward propagation through frozen attention counts. Separating
 those needs the same edge recomputed from a float32 graph, which I have not done.
