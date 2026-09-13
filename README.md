@@ -26,7 +26,10 @@ finished and independent of architecture. Propagating a source feature's decoder
 through frozen attention and reading it with the target's encoder reproduces the adjacency entries
 circuit-tracer computes by an entirely different route, with no normalisation constant between them
 (median ratio 1.0064 over 40 edges; exactly 1.0000 when dtypes match). Splitting that across one
-layer's heads is exact to 2.5e-07.
+layer's heads is exact to 2.5e-07. Ported to circuit-tracer and checked there on 960 edges from
+Qwen3-0.6B and 1.7B graphs, every edge from a float32 graph agrees with the adjacency matrix to
+within 1.6e-04. The port is open upstream as
+[decoderesearch/circuit-tracer#114](https://github.com/decoderesearch/circuit-tracer/pull/114).
 
 **QK attribution** decomposes an attention score into query-side by key-side feature terms. The
 decomposition is exact, and its numbers predict interventions exactly: delete a feature from the
@@ -93,6 +96,24 @@ Every number here came from a run whose script, config and raw output are in `ex
 
 Ablating the top-ranked features against ablating the same number at random, over 60 head-curves.
 Half the movement the attributed features can produce comes from about 1.5% of them.
+
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="experiments/figures/015-graph-precision-dark.png">
+  <img alt="Distance of each edge's forward effect from its adjacency entry, against the entry's size, for Qwen3-0.6B and Qwen3-1.7B. Edges from bfloat16 graphs spread widely at small sizes; edges from float32 graphs all agree to within 2e-4." src="experiments/figures/015-graph-precision-light.png">
+</picture>
+
+The upstream port against 960 graph edges. The spread in bfloat16 graphs belongs to the graph and
+not to the head loadings: the same prompts attributed in float32 agree on every edge, and the
+worst bfloat16 edges agree once followed into the float32 graphs.
+
+## Upstream
+
+| Pull request | Contents | Evidence |
+|---|---|---|
+| [circuit-tracer#114](https://github.com/decoderesearch/circuit-tracer/pull/114) | Head loadings: per-layer and single-sweep splits of an edge across attention heads | `experiments/014`, `015`, `017` |
+
+The QK attribution port sits on the fork's `main` at `46cbddd`, checked against real attention
+scores in `experiments/016`, and waits on review of the first pull request.
 
 ## Modules
 
