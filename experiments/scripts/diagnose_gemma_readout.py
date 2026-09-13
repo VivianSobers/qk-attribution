@@ -84,10 +84,8 @@ for index in strongest + sampled:
     got = readouts(target, source)
     for key, value in got.items():
         ratios.setdefault(key, []).append(value / expected)
-    print(
-        f"{target:7d} {source:6d} {int(layers[source]):3d} {int(layers[target]):3d} {expected:+10.5f} | "
-        + "  ".join(f"{got[k] / expected:9.4f}" for k in got)
-    )
+    edge = f"{target:7d} {source:6d} {int(layers[source]):3d} {int(layers[target]):3d}"
+    print(f"{edge} {expected:+10.5f} | " + "  ".join(f"{got[k] / expected:9.4f}" for k in got))
 
 print("\nsummary over", len(strongest) + len(sampled), "edges (20 strongest, 20 random, seed 0)")
 for key, values in ratios.items():
