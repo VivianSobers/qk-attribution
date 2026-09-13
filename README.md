@@ -76,6 +76,7 @@ refused rather than approximated.
 | Do the numbers predict interventions? | Exactly: 263/263 heads, correlation 1.000000 | `experiments/011` |
 | Is one feature the cause of one edge? | Only 61% of the time; the ranking is the useful part | `experiments/011` |
 | Does the ranking predict the pattern? | Yes: 2 to 10 times a matched control, in ~90% of cases | `experiments/012` |
+| How long is an explanation? | 25 features for half the movement, 197 for 90% | `experiments/013` |
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
