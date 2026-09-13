@@ -80,6 +80,14 @@ refused rather than approximated.
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="experiments/figures/013-saturation-dark.png">
+  <img alt="Normalised attention movement against the share of attributed features ablated, for Qwen3-0.6B and Qwen3-1.7B. Features ranked by attribution move attention much sooner than the same number in random order." src="experiments/figures/013-saturation-light.png">
+</picture>
+
+Ablating the top-ranked features against ablating the same number at random, over 60 head-curves.
+Half the movement the attributed features can produce comes from about 1.5% of them.
+
 ## Modules
 
 | Module | Responsibility |

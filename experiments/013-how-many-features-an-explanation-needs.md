@@ -29,6 +29,14 @@ can do, not half of the attention pattern.
 
 ## Result
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="figures/013-saturation-dark.png">
+  <img alt="Normalised attention movement against the share of attributed features ablated, for Qwen3-0.6B and Qwen3-1.7B. The curve for features ranked by attribution rises well above the curve for the same number of features in random order across the whole range, and the two meet only when every feature is ablated." src="figures/013-saturation-light.png">
+</picture>
+
+Median over heads, with the interquartile band. Each head's curve is interpolated onto a shared
+grid in log space before pooling, since heads differ in pool size.
+
 | | features at `k50` | share of pool | features at `k90` | share of pool |
 |---|---|---|---|---|
 | Qwen3-0.6B, 48 heads | 20 | 1.5% | 134 | 12.1% |
@@ -88,6 +96,5 @@ budget for a graph interface. Reading the top 200 gets to 90%, which is not.
 
 ## Next
 
-- Plot the curves. The tables above hide the shape, and the shape is the finding.
 - The same measurement on the 4B and 8B high-L0 sets, where the feature share of the score is much
   higher and the denominator therefore means more.
