@@ -14,7 +14,7 @@ import torch
 from common import load, parser
 
 from qk_attribution.features import activations_for
-from qk_attribution.loadings import edge_effect, edge_loadings
+from qk_attribution.loadings import edge_effect, path_loadings
 
 extra = parser(__doc__.splitlines()[0])
 extra.add_argument("--edges", type=int, default=40)
@@ -67,19 +67,21 @@ for flat in candidates.tolist():
 
     # Split at every attention layer the signal could have used. Each is its own partition of the
     # same total, so the layer where the bypass is smallest is the one that actually carried it.
+    # path_loadings computes every layer's split in one sweep each way, and matches calling
+    # edge_loadings once per layer to floating-point precision (tests/test_loadings.py).
+    path = path_loadings(
+        model,
+        cache,
+        source,
+        source_position,
+        source_layer,
+        reader,
+        target_position,
+        target_layer,
+    )
     by_layer = []
-    for attention_layer in range(source_layer + 1, target_layer + 1):
-        loading = edge_loadings(
-            model,
-            cache,
-            source,
-            source_position,
-            source_layer,
-            reader,
-            target_position,
-            target_layer,
-            attention_layer,
-        )
+    for attention_layer in path.layers:
+        loading = path.at(attention_layer)
         magnitudes = loading.per_head.abs()
         by_layer.append(
             {
