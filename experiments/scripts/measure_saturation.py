@@ -180,21 +180,7 @@ for layer in sampled_layers(model, count=3):
         )
 
 
-def summarise(field: str) -> str:
-    values = [r[field] for r in rows if r[field] is not None]
-    if not values:
-        return "n/a"
-    shares = [r[field] / r["n_features"] for r in rows if r[field] is not None]
-    return (
-        f"median {int(torch.tensor(values, dtype=torch.float).median())} features "
-        f"({torch.tensor(shares).median():.1%} of the pool), "
-        f"{len(values)}/{len(rows)} heads reached it"
-    )
-
-
-print("\nfeatures needed to reach a share of the full-ablation movement:")
-for field in ("k50", "random_k50", "k90", "random_k90"):
-    print(f"  {field:12s} {summarise(field)}")
+print("\nper-head curves written; pool them with experiments/scripts/summarise_saturation.py")
 
 with open(args.out, "w") as fh:
     json.dump(
