@@ -163,3 +163,114 @@ def _seed(model: object, cache: object, source: Tensor, position: int) -> Tensor
     delta = torch.zeros(n_pos, source.shape[0], dtype=source.dtype, device=source.device)
     delta[position] = source
     return delta
+
+
+@dataclass(frozen=True)
+class PathLoadings:
+    """Every attention layer's split of one edge, computed together.
+
+    Row ``i`` of ``per_head`` and entry ``i`` of ``bypass`` belong to ``layers[i]``. Each row is its
+    own partition of ``total``; the rows are not parts of one joint decomposition.
+    """
+
+    layers: list[int]
+    per_head: Tensor
+    bypass: Tensor
+    total: Tensor
+
+    def at(self, layer: int) -> EdgeLoadings:
+        """The split at one attention layer, in the form :func:`edge_loadings` returns."""
+        if layer not in self.layers:
+            raise ValueError(f"layer {layer} is not on this path, which covers {self.layers}")
+        row = self.layers.index(layer)
+        return EdgeLoadings(
+            per_head=self.per_head[row], bypass=self.bypass[row], attention_layer=layer
+        )
+
+
+def path_loadings(
+    model: object,
+    cache: object,
+    source: Tensor,
+    source_position: int,
+    source_layer: int,
+    reader: Tensor,
+    target_position: int,
+    target_layer: int,
+) -> PathLoadings:
+    """Split one edge at every attention layer on its path, in a single sweep each way.
+
+    Calling :func:`edge_loadings` once per layer re-propagates every head's part from that layer to
+    the target, which costs on the order of ``L**2 * n_heads`` attention steps for a path ``L``
+    layers long. Everything here is linear, so the readout is a fixed linear functional of the
+    perturbation at each layer. One forward sweep gives the perturbation arriving at every layer,
+    one backward sweep gives that functional, and each head's loading is then a dot product. The
+    cost falls to a few attention steps per layer.
+
+    Args:
+        source_layer: The block whose MLP writes the source. A token embedding is written before
+            block 0 and uses ``-1``.
+        target_layer: The block whose MLP the target feature belongs to.
+
+    Returns:
+        A :class:`PathLoadings` over layers ``source_layer + 1`` to ``target_layer`` inclusive, each
+        agreeing with :func:`edge_loadings` for that layer.
+    """
+    if target_layer <= source_layer:
+        raise ValueError(
+            f"target_layer must come after source_layer, got {source_layer} and {target_layer}"
+        )
+    first = source_layer + 1
+
+    # Gradients are taken with autograd.grad rather than backward, so nothing accumulates on a real
+    # model's parameters, and grad mode is restored for callers that turned it off.
+    with torch.enable_grad():
+        seed = _seed(model, cache, source.detach(), source_position).requires_grad_(True)
+        states = [seed]
+        for layer in range(first, target_layer):
+            state = states[-1]
+            patterns, scale = frozen_patterns(cache, layer), _ln1_scale(cache, layer)
+            states.append(state + attention_step(model, layer, state, patterns, scale))
+        readout = (
+            to_transcoder_input(model, cache, states[-1], target_layer)[target_position]
+            @ reader.detach()
+        )
+        # Each entry is the readout's sensitivity to the residual entering that layer.
+        sensitivities = torch.autograd.grad(readout, states)
+
+    with torch.no_grad():
+        per_head, bypass = [], []
+        for offset, layer in enumerate(range(first, target_layer)):
+            arriving = states[offset].detach()
+            written = attention_step(
+                model,
+                layer,
+                arriving,
+                frozen_patterns(cache, layer),
+                _ln1_scale(cache, layer),
+                per_head=True,
+            )
+            onward = sensitivities[offset + 1]
+            per_head.append(torch.einsum("hpd,pd->h", written, onward))
+            bypass.append((arriving * onward).sum())
+
+        # At the target's own block the split happens at the readout, as in edge_loadings.
+        arriving = states[-1].detach()
+        written = attention_step(
+            model,
+            target_layer,
+            arriving,
+            frozen_patterns(cache, target_layer),
+            _ln1_scale(cache, target_layer),
+            per_head=True,
+        )
+        reader = reader.detach()
+        per_head.append(apply_ln2(model, cache, written, target_layer)[:, target_position] @ reader)
+        bypass.append(apply_ln2(model, cache, arriving, target_layer)[target_position] @ reader)
+
+        return PathLoadings(
+            layers=list(range(first, target_layer + 1)),
+            per_head=torch.stack(per_head),
+            bypass=torch.stack(bypass),
+            total=readout.detach(),
+        )
