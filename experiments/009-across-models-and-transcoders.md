@@ -6,8 +6,9 @@ Scripts: `experiments/scripts/run_pipeline.sh` over `measure_completeness`, `mea
 `measure_edge_loadings` and `explain_attention`
 Raw output: `experiments/results/009-qwen3-{0.6b,1.7b,4b}-*.json`
 Config: seed 0, the prompt `The capital of the state containing Dallas is`, query position 8, one
-graph per model generated with that model's own transcoders. Layers sampled at evenly spaced
-depths rather than fixed indices, so the three models are compared at matching relative depth.
+graph per model generated with that model's own transcoders. Four layers sampled at one, two, three
+and four fifths of the depth (layers 6, 11, 17, 22 of 28 on 0.6B and 1.7B; 7, 14, 22, 29 of 36 on
+4B), so the three models are compared at matching relative depth.
 Feature directions extracted in float32 throughout. Models in float32 except Qwen3-4B, which is
 bfloat16 because float32 weights plus its transcoders do not fit on a 24 GB card.
 
@@ -42,9 +43,9 @@ its bfloat16 weights, addressed below.
 
 ## The feature share rises sharply with model size and transcoder quality
 
-Feature-feature share of the score norm, by relative depth:
+Feature-feature share of the score norm, one head per sampled layer:
 
-| Model | L0 | 25% | 50% | 75% | 100% |
+| Model | L0 | 1/5 depth | 2/5 | 3/5 | 4/5 |
 |---|---|---|---|---|---|
 | 0.6B | low | 0.161 | 0.094 | 0.109 | 0.058 |
 | 1.7B | low | 0.306 | 0.311 | 0.145 | 0.071 |
@@ -60,7 +61,9 @@ roughly doubles the share at shallow and middle depth, so size alone accounts fo
 further jump to 4B is larger than that trend would predict, which points at the transcoder set, but
 it is not isolated.
 
-The share falls with depth on every model. The last sampled layer is the weakest in all three.
+Depth behaves differently in the two regimes. With the low-L0 sets the deepest sampled layer has the
+lowest share. With the high-L0 set on 4B the share peaks at three fifths and the shallowest layer
+has the lowest share.
 
 ## Low-rank structure does not improve, and gets slightly worse
 
@@ -69,14 +72,22 @@ magnitude in the largest pairs:
 
 | Model | rank 16 | rank 32 | rank 64 | top 0.1% | top 1% | top 10% |
 |---|---|---|---|---|---|---|
-| 0.6B | 0.232 | 0.117 | 0.024 | 0.088 | 0.287 | 0.735 |
-| 1.7B | 0.246 | 0.118 | 0.037 | 0.124 | 0.343 | 0.726 |
-| 4B | 0.361 | 0.222 | 0.088 | 0.083 | 0.274 | 0.688 |
+| 0.6B | 0.231 | 0.116 | 0.023 | 0.087 | 0.280 | 0.728 |
+| 1.7B | 0.245 | 0.116 | 0.036 | 0.123 | 0.342 | 0.724 |
+| 4B | 0.361 | 0.222 | 0.088 | 0.083 | 0.274 | 0.686 |
 
 The larger model is harder to truncate, not easier, and its mass is slightly less concentrated. The
 conclusion from experiments 004 and 006 stands and strengthens: this structure is worth about a
 factor of two, and it does not get cheaper as models get larger. Anyone hoping the low-rank route
 scales should see this row first.
+
+Blocks too small for a given rank are left out of that column: on 0.6B, rank 32 and 64 cover 48 of
+64 blocks, and on 1.7B rank 64 covers 48.
+
+*Correction, 2026-09-13.* An audit recomputed this table from the JSON on disk. The earlier version
+had 0.232, 0.117, 0.024, 0.088, 0.287, 0.735 for 0.6B, 0.246, 0.118, 0.037, 0.124, 0.343, 0.726
+for 1.7B and 0.688 for the 4B top 10%. Those values could not be reproduced from any saved result
+and have been replaced. The largest change is 0.007 and no conclusion depended on it.
 
 ## Precision is a dtype artifact, and it was measured rather than assumed
 
