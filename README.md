@@ -41,7 +41,9 @@ distributes attention, but it changes attention to the one position it names mor
 same-position competitor only 61% of the time.
 
 Two caveats sit on top of that. Feature terms account for 8% to 21% of the score with the low-L0
-transcoders published for Qwen3-0.6B, rising to 63% with the higher-L0 set for Qwen3-4B. And the
+transcoders published for Qwen3-0.6B. With the higher-L0 sets they reach 63% on one sampled
+Qwen3-4B head and 86% on one Qwen3-8B head, though the explanations on those models did not read
+any better. And the
 exactness holds only while the normalisation scales are frozen, as attribution graphs freeze them:
 let RMSNorm respond and the same prediction correlates at 0.17 to 0.54 instead of 1.0.
 
@@ -71,7 +73,7 @@ refused rather than approximated.
 | Is there low-rank structure to exploit? | About a factor of two, not an order of magnitude | `experiments/004`, `006` |
 | Do head loadings match upstream? | Yes, median ratio 1.0064 | `experiments/007` |
 | Does the output read as anything? | Key side yes, query side not with low-L0 transcoders | `experiments/008` |
-| Does it hold on other models? | Yes; feature share reaches 63% on 4B high-L0 transcoders | `experiments/009` |
+| Does it hold on other models? | Yes, on four; feature share reaches 86% at one 8B high-L0 head | `experiments/009` |
 | Do explanations point at the right token? | 79.4% of 412 head cases, against a 10.2% control | `experiments/010` |
 | Do the numbers predict interventions? | Exactly: 263/263 heads, correlation 1.000000 | `experiments/011` |
 | Is one feature the cause of one edge? | Only 61% of the time; the ranking is the useful part | `experiments/011` |
