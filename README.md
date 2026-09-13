@@ -77,6 +77,7 @@ refused rather than approximated.
 | Is one feature the cause of one edge? | Only 61% of the time; the ranking is the useful part | `experiments/011` |
 | Does the ranking predict the pattern? | Yes: 2 to 10 times a matched control, in ~90% of cases | `experiments/012` |
 | How long is an explanation? | 25 features for half the movement, 197 for 90% | `experiments/013` |
+| Does the upstream port agree? | Yes: median ratio 0.9968, partition error 8.3e-06 | `experiments/014` |
 
 Every number here came from a run whose script, config and raw output are in `experiments/`.
 
